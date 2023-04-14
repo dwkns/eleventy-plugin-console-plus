@@ -1,0 +1,31 @@
+{
+  "name": "eleventy-plugin-console-plus",
+  "version": "0.0.1",
+  "description": "An enhanced console.log for Eleventy",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dwkns/eleventy-plugin-console-plus.git"
+  },
+  "scripts": {
+    "pub": "#### use ./bin/pub ### to publlish to npm"
+  },
+  "keywords": [
+    "eleventy",
+    "dwkns"
+  ],
+  "author": "dwkns",
+  "license": "MIT",
+  "dependencies": {
+    "escape-html": "^1.0.3"
+  },
+  "bugs": {
+    "url": "https://github.com/dwkns/eleventy-plugin-console-plus/issues"
+  },
+  "eslintConfig": {
+    "parserOptions": {
+      "ecmaVersion": 2020
+    }
+  },
+  "homepage": "https://github.com/dwkns/eleventy-plugin-console-plus#readme"
+}
