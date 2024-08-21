@@ -18,9 +18,9 @@ $ yarn add eleventy-plugin-console-plus
 
 ### Add to your config. Usually `.eleventy.js`
 ```js
-const { logToConsole } = require("dwkns-11ty-plugins");
+ import logToConsole from 'eleventy-plugin-console-plus'
 
-module.exports = (eleventyConfig) => {
+export default async  (eleventyConfig)=> {
   // default options shown
   options = {
     logToHtml: true, // log to HTML
