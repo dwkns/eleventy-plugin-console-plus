@@ -85,6 +85,8 @@ let logToConsole = (eleventyConfig, options) => {
       }</code></pre></div>`;
 
       return css + html;
+    } else {
+      return "" // return an empty string so you don't get `undefined` in your template
     }
   });
 };
