@@ -48,10 +48,10 @@ Printing out a `posts` object with a title.
 {% console posts, "Posts" %}
 ...
 ```
-![alt text](./images/html.png)
+![alt text](html.png)
 *html output showing the contents of a `posts` object*
 
-![alt text](./images/console.png)
+![alt text](console.png)
 *Terminal output of the same `posts` object*
 
 
