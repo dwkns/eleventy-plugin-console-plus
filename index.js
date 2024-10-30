@@ -1,55 +1,97 @@
 import { inspect } from "util";
 import escapeHtml from "escape-html";
-// utility function to log value to HTML & the Console
+
+// utility function to log value to a template, terminal and browser console.
 let logToConsole = (eleventyConfig, options) => {
   let defaults = {
     logToHtml: true, // log to HTML
     logToTerminal: true, // log to terminal
-    colorizeConsole: true, // colorize the console output
+    logToBrowserConsole: true, // log to browser console
+    colorizeConsole: true, // colorize the output (where possible)
     escapeHTML: true, // escape HTML in the output
-    depth: 8 // depth of object to print
+    depth: 8, // depth of object to print
+    breakLength: 60 // length of line to break
   };
   options = Object.assign({}, defaults, options);
 
   eleventyConfig.addShortcode("console", (value, title = "") => {
-    let showHidden, colorize
- 
-    let consoleStr = inspect(
-      value,
-      showHidden = false,
-      options.depth,
-      colorize =options.colorizeConsole
-    );
 
-    let htmlStr = inspect(
-      value,
-      showHidden  = false,
-      options.depth,
-      colorize  = false
-    );
+    let terminalStr = inspect(value, {
+      showHidden: false,
+      depth: options.depth,
+      colors: options.colorizeConsole,
+      breakLength: options.breakLength
+    })
 
-    if (typeof value === "string") {
-      consoleStr = value;
-      htmlStr = value;
-    }
+    let htmlStr = inspect(value, {
+      showHidden: false,
+      depth: options.depth,
+      colors: false,
+      breakLength: options.breakLength
+    })
 
-    let displayTitle = "";
+    let browserConsoleStr = inspect(value, {
+      showHidden: false,
+      depth: options.depth,
+      colors: false,
+      breakLength: options.breakLength
+    })
 
+    /* logging to terminal */
     if (options.logToTerminal) {
-      console.log("-------------console output-------------");
-      if (title) {
-        console.log(`[ ${title} ]`, consoleStr);
-      } else {
-        console.log(consoleStr);
+      let terminalTitleString = title ? `[${title}]: ` : ``
+      switch (typeof value) {
+        // Functions need to be logged differently to show thier contents.
+        case "function":
+          console.log(`${terminalTitleString}${value.toString()}`)
+          break;
+        default:
+          console.log(`${terminalTitleString}${terminalStr}`)
       }
-      console.log("-------------end-------------");
     }
 
-    if (options.logToHtml) {
-      if (title) {
-        displayTitle = `<p class="title">${title}</p>`;
+    /* 
+      logging to browser console 
+      returns either a <script> tag with a console.log 
+      or an empty string inserted into the template below
+    */
+    let browserConsoleHtml
+    if (options.logToBrowserConsole) {
+      let browserConsoleTitleString = title ? `[${title}]: ` : ``
+      switch (typeof value) {
+        case "string":
+        case "number":
+          browserConsoleHtml = `<script>console.log("${browserConsoleTitleString}",${browserConsoleStr})</script>`
+          break;
+        case 'object':
+          if (value == null) {
+            browserConsoleHtml = `<script>console.log("${browserConsoleTitleString}",${browserConsoleStr})</script>`
+          } else {
+
+            let showTitle = title ? `<script>console.log("${browserConsoleTitleString}")</script>` : ""
+            browserConsoleHtml = `${showTitle}<script>console.dir(${browserConsoleStr})</script>`
+          }
+          break;
+        case 'undefined':
+        case 'boolean':
+        case 'bigint':
+          browserConsoleHtml = `<script>console.log("${browserConsoleTitleString}",${browserConsoleStr},)</script>`
+          break;
+        case 'function':
+          browserConsoleHtml = `<script>console.log("${browserConsoleTitleString}",${value.toString()})</script>`
+          break;
+        default:
+          browserConsoleHtml = `<script>console.log("${browserConsoleTitleString}","Not sure what that is!")</script>`
       }
-      let css = `
+
+    } else {
+      browserConsoleHtml = ""
+    }
+
+
+    /* logging to template */
+    if (options.logToHtml) {
+      const css = `
       <style>
       .code-block {
         background: #f4f4f4;
@@ -80,13 +122,18 @@ let logToConsole = (eleventyConfig, options) => {
       }
       </style>`;
 
-      let html = `<div class="code-block">${displayTitle}<pre><code>${
-        options.escapeHTML ? escapeHtml(htmlStr) : htmlStr
-      }</code></pre></div>`;
+      const html = `
+        <div class="code-block">
+          ${title ? "<p class='title'>" + title + "</p>" : ""} 
+          <pre><code>${options.escapeHTML ? escapeHtml(htmlStr) : htmlStr}</code></pre>
+        </div>`;
 
-      return css + html;
+      return css + browserConsoleHtml + html;
     } else {
-      return "" // return an empty string so you don't get `undefined` in your template
+      // We have to return something or you get undefined in your template.
+      // Will return a <script> tag (defined above) if logToBrowserConsole is true
+      // or "" if logToBrowserConsole is set to false.
+      return browserConsoleHtml
     }
   });
 };
