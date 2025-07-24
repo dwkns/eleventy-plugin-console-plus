@@ -3,12 +3,16 @@
   "version": "0.0.6",
   "description": "An enhanced console.log for Eleventy",
   "main": "index.js",
+  "packageManager": "yarn@4.9.2",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dwkns/eleventy-plugin-console-plus.git"
   },
   "scripts": {
-    "pub": "#### use ./bin/pub ### to publlish to npm"
+    "pub": "#### use ./bin/pub ### to publlish to npm",
+    "dev": "npx @11ty/eleventy --serve",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "eleventy",
@@ -28,5 +32,11 @@
       "ecmaVersion": 2020
     }
   },
-  "homepage": "https://github.com/dwkns/eleventy-plugin-console-plus#readme"
+  "homepage": "https://github.com/dwkns/eleventy-plugin-console-plus#readme",
+  "devDependencies": {
+    "@11ty/eleventy": "^3.1.2",
+    "jsdom": "^26.1.0",
+    "rimraf": "^6.0.1",
+    "vitest": "^3.2.1"
+  }
 }

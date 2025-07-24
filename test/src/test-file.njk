@@ -1,0 +1,54 @@
+---
+title: "Console Plus"
+permalink: "/"
+---
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+    <style>
+        body {
+            margin: auto;
+            padding: 20px;
+        }
+
+        hr {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        pre {
+            max-width: 100vw;
+        }
+
+        pre, code {
+          white-space: pre-wrap; /* Wraps text while preserving whitespace */
+          overflow-x: auto; /* Adds horizontal scrollbar if needed */
+          word-wrap: break-word; /* Ensures long words break to fit */
+          max-width: 100%; /* Restricts block to container width */
+          box-sizing: border-box; /* Includes padding/borders in width */
+        }
+    </style>
+</head>
+
+<body>
+    {% set object = {
+        a: 1,
+        template: { big: "data", nested: { foo: "bar" } },
+        b: { template: { x: 1 } },
+        secret: '12345',
+        hidden: 'should hide',
+        visible: 'ok'
+    } %}
+    
+    {% console { a: "a", b: undefined } , { title: "object" } %}
+
+   
+</body>
+
+</html>
+

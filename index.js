@@ -1,140 +1,71 @@
-import { inspect } from "util";
-import escapeHtml from "escape-html";
+import { logToTerminal } from "./lib/logToTerminal.js";
+import { stringifyPlus } from "./lib/stringify-plus.js";
+import { jsonViewer } from "./lib/json-viewer.js";
 
 // utility function to log value to a template, terminal and browser console.
-let logToConsole = (eleventyConfig, options) => {
+let consolePlus = async (eleventyConfig, options) => {
   let defaults = {
+    title: "",
     logToHtml: true, // log to HTML
     logToTerminal: true, // log to terminal
     logToBrowserConsole: true, // log to browser console
+    
+    // logToTerminal options 
     colorizeConsole: true, // colorize the output (where possible)
-    escapeHTML: true, // escape HTML in the output
     depth: 8, // depth of object to print
-    breakLength: 60 // length of line to break
+    breakLength: 60,// length of line to break
+
+    
+    // log to HTML options
+    
+    // StringifyPlus options
+    showTemplate: false,
+    maxCircularDepth: 1,
+    removeKeys: [],
+
+    // jsonViewer options
+    showTypes: false,
+    defaultExpanded: false,
+    pathsOnHover: false,
+    showControls: false,
+    indentWidth: 6,
   };
   options = Object.assign({}, defaults, options);
 
-  eleventyConfig.addShortcode("console", (value, title = "") => {
+  eleventyConfig.addAsyncShortcode("console", async (value, options) => {
 
-    let terminalStr = inspect(value, {
-      showHidden: false,
-      depth: options.depth,
-      colors: options.colorizeConsole,
-      breakLength: options.breakLength
-    })
+    options = Object.assign({}, defaults, options);
 
-    let htmlStr = inspect(value, {
-      showHidden: false,
-      depth: options.depth,
-      colors: false,
-      breakLength: options.breakLength
-    })
-
-    let browserConsoleStr = inspect(value, {
-      showHidden: false,
-      depth: options.depth,
-      colors: false,
-      breakLength: options.breakLength
-    })
-
-    /* logging to terminal */
+    // log to terminal
     if (options.logToTerminal) {
-      let terminalTitleString = title ? `[${title}]: ` : ``
-      switch (typeof value) {
-        // Functions need to be logged differently to show thier contents.
-        case "function":
-          console.log(`${terminalTitleString}${value.toString()}`)
-          break;
-        default:
-          console.log(`${terminalTitleString}${terminalStr}`)
-      }
+       logToTerminal(value, options.title, options)
     }
 
-    /* 
-      logging to browser console 
-      returns either a <script> tag with a console.log 
-      or an empty string inserted into the template below
-    */
-    let browserConsoleHtml
+    // stringifyPlus is our custom JSON stringifier that deals with 
+    // Eleventy quirks and other edge cases.
+    const processedValue = await stringifyPlus(value, options);
+   
+    // function has to return a string or the shortcode wiill error.
+    let browserHTML = "" 
+
     if (options.logToBrowserConsole) {
-      let browserConsoleTitleString = title ? `[${title}]: ` : ``
-      switch (typeof value) {
-        case "string":
-        case "number":
-          browserConsoleHtml = `<script>console.log("${browserConsoleTitleString}",${browserConsoleStr})</script>`
-          break;
-        case 'object':
-          if (value == null) {
-            browserConsoleHtml = `<script>console.log("${browserConsoleTitleString}",${browserConsoleStr})</script>`
-          } else {
-
-            let showTitle = title ? `<script>console.log("${browserConsoleTitleString}")</script>` : ""
-            browserConsoleHtml = `${showTitle}<script>console.dir(${browserConsoleStr})</script>`
-          }
-          break;
-        case 'undefined':
-        case 'boolean':
-        case 'bigint':
-          browserConsoleHtml = `<script>console.log("${browserConsoleTitleString}",${browserConsoleStr},)</script>`
-          break;
-        case 'function':
-          browserConsoleHtml = `<script>console.log("${browserConsoleTitleString}",${value.toString()})</script>`
-          break;
-        default:
-          browserConsoleHtml = `<script>console.log("${browserConsoleTitleString}","Not sure what that is!")</script>`
-      }
-
-    } else {
-      browserConsoleHtml = ""
+      // Adds a script tag to output processedValue to the browser console.
+      browserHTML = `<script>console.log("${options.title}",${processedValue})</script>`
     }
 
-
-    /* logging to template */
     if (options.logToHtml) {
-      const css = `
-      <style>
-      .code-block {
-        background: #f4f4f4;
-        border: 1px solid #ddd;
-        border-left: 3px solid #f36d33;
-        color: #666;
-        max-width: 100%;
-        padding: 0.5rem 1rem;
-        display: block;
-        margin-top: 1rem;
-        margin-bottom: 1rem;
-      }
-      .title {
-        font-size: 18px;
-        font-family: sans-serif;
-        font-weight: 600;
-        margin-top:0.5rem;
-        margin-bottom:0.5rem;
-      }
-      pre {
-        page-break-inside: avoid;
-        font-family: monospace;
-        font-size: 15px;
-        line-height: 1.6;
-        word-wrap: break-word;
-        overflow: auto;
-        margin: 0;
-      }
-      </style>`;
-
-      const html = `
-        <div class="code-block">
-          ${title ? "<p class='title'>" + title + "</p>" : ""} 
-          <pre><code>${options.escapeHTML ? escapeHtml(htmlStr) : htmlStr}</code></pre>
-        </div>`;
-
-      return css + browserConsoleHtml + html;
-    } else {
-      // We have to return something or you get undefined in your template.
-      // Will return a <script> tag (defined above) if logToBrowserConsole is true
-      // or "" if logToBrowserConsole is set to false.
-      return browserConsoleHtml
+      console.log("options", options)
+      // Adds a script tag to output processedValue to the browser console.
+      let newHTML = await jsonViewer(processedValue, options)
+      browserHTML = newHTML + browserHTML
     }
+
+
+
+    return browserHTML
+
+
   });
 };
-export default logToConsole
+export default consolePlus
+export { consolePlus }
