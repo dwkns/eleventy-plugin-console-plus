@@ -26,11 +26,11 @@ permalink: "/"
         }
 
         pre, code {
-          white-space: pre-wrap; /* Wraps text while preserving whitespace */
-          overflow-x: auto; /* Adds horizontal scrollbar if needed */
-          word-wrap: break-word; /* Ensures long words break to fit */
-          max-width: 100%; /* Restricts block to container width */
-          box-sizing: border-box; /* Includes padding/borders in width */
+            white-space: pre-wrap; /* Wraps text while preserving whitespace */
+            overflow-x: auto; /* Adds horizontal scrollbar if needed */
+            word-wrap: break-word; /* Ensures long words break to fit */
+            max-width: 100%; /* Restricts block to container width */
+            box-sizing: border-box; /* Includes padding/borders in width */
         }
     </style>
 </head>
@@ -44,11 +44,207 @@ permalink: "/"
         hidden: 'should hide',
         visible: 'ok'
     } %}
-    
-    {% console { a: "a", b: undefined } , { title: "object" } %}
 
-   
+    <h1>{{title}}</h1>
+
+    <!-- Comparison with dump -->
+    <h2>Comparison with | dump</h2>
+    <h3>Input using dump</h3>
+    <p><code>{% raw %}{{ { a: "a", b: undefined } | dump }}{% endraw %}</code></p>
+    <h3>Output</h3>
+    {{ { a: "a", b: undefined } | dump }}
+    
+    <h3>Same input using console</h3>
+    <p><code>{% raw %}{% console { a: "a", b: undefined } %}{% endraw %}</code></p>
+    <h3>Output</h3>
+    {% console { a: "a", b: undefined } %}
+    <hr />
+
+    <!-- String with title -->
+    <h2>String with title</h2>
+    <h3>Input</h3>
+    <p><code>{% raw %}{% console "value", { title: "string" } %}{% endraw %}</code></p>
+    <h3>Output</h3>
+    {% console "value", { title: "string" } %}
+    <hr />
+
+    <!-- Number with title -->
+    <h2>Number with title</h2>
+    <h3>Input</h3>
+    <p><code>{% raw %}{% console 123, { title: "number" } %}{% endraw %}</code></p>
+    <h3>Output</h3>
+    {% console 123, { title: "number" } %}
+    <hr />
+
+    <!-- Array with title -->
+    <h2>Array with title</h2>
+    <h3>Input</h3>
+    <p><code>{% raw %}{% console ["string 1", "string 2", 3, 4, {a:"a"}], { title: "array" } %}{% endraw %}</code></p>
+    <h3>Output</h3>
+    {% console ["string 1", "string 2", 3, 4, {a:"a"}], { title: "array" } %}
+    <hr />
+
+    <!-- Basic Object -->
+    <h2>Object</h2>
+    <h3>Input</h3>
+    <code><pre>{% raw %}
+{% set object = {
+    a: 1,
+    nested: { big: "data", nested: { foo: "bar" } },
+    b: { nested: { x: 1 } },
+    secret: '12345',
+    hidden: 'should hide',
+    visible: 'ok'
+} %}
+
+{% console object, { title: "object" } %}
+    {% endraw %}</pre></code>
+    <h3>Output</h3>
+    {% set object = {
+        a: 1,
+        nested: { big: "data", nested: { foo: "bar" } },
+        b: { nested: { x: 1 } },
+        secret: '12345',
+        hidden: 'should hide',
+        visible: 'ok'
+    } %}
+    
+    {% console object, { title: "object" } %}
+    <hr />
+
+    <!-- Object with automatic template key removal -->
+    <h2>Object with automatic template key removal</h2>
+    <h3>Input</h3>
+    <code><pre>{% raw %}
+{% set object = {
+    a: 1,
+    template: { big: "data", nested: { foo: "bar" } },
+    b: { template: { x: 1 } },
+    secret: '12345',
+    hidden: 'should hide',
+    visible: 'ok'
+} %}
+
+{% console object, { title: "Object with automatic template key removal" } %}
+    {% endraw %}</pre></code>
+    <h3>Output</h3>
+    {% set object = {
+        a: 1,
+        template: { big: "data", nested: { foo: "bar" } },
+        b: { template: { x: 1 } },
+        secret: '12345',
+        hidden: 'should hide',
+        visible: 'ok'
+    } %}
+    
+    {% console object, { title: "Object with automatic template key removal" } %}
+    <hr />
+
+    <!-- Object showing template key -->
+    <h2>Object showing template key</h2>
+    <h3>Input</h3>
+    <code><pre>{% raw %}
+{% set object = {
+    a: 1,
+    template: { big: "data", nested: { foo: "bar" } },
+    b: { template: { x: 1 } },
+    secret: '12345',
+    hidden: 'should hide',
+    visible: 'ok'
+} %}
+
+{% console object, { 
+    title: "Object showing template key",
+    showTemplate: true
+} %}
+    {% endraw %}</pre></code>
+    <h3>Output</h3>
+    {% set object = {
+        a: 1,
+        template: { big: "data", nested: { foo: "bar" } },
+        b: { template: { x: 1 } },
+        secret: '12345',
+        hidden: 'should hide',
+        visible: 'ok'
+    } %}
+    
+    {% console object, { title: "Object showing template key", showTemplate: true } %}
+    <hr />
+
+    <!-- Object with Key Replacement -->
+    <h2>Object with Key Replacement</h2>
+    <h3>Input</h3>
+    <code><pre>{% raw %}
+{% set object = {
+    a: 1,
+    template: { big: "data", nested: { foo: "bar" } },
+    b: { template: { x: 1 } },
+    secret: '12345',
+    hidden: 'should hide',
+    visible: 'ok'
+} %}
+
+{% console object, { 
+    title: "object",  
+    removeKeys: [ 
+        { keyName: 'template', replaceString: 'Customised Template message' },
+        { keyName: 'secret', replaceString: '***hidden***' },
+        'hidden'
+    ] 
+} %}
+    {% endraw %}</pre></code>
+    <h3>Output</h3>
+    {% set object = {
+        a: 1,
+        template: { big: "data", nested: { foo: "bar" } },
+        b: { template: { x: 1 } },
+        secret: '12345',
+        hidden: 'should hide',
+        visible: 'ok'
+    } %}
+    
+    {% console object, { 
+        title: "object",  
+        removeKeys: [ 
+            'template',
+            { keyName: 'secret', replaceString: '***hidden***' },
+            'hidden'
+        ] 
+    } %}
+    <hr />
+
+    <!-- Complex Object using console (for comparison) -->
+    <h2>Complex Object using console (for comparison)</h2>
+    <h3>Input</h3>
+    <p><code>{% raw %}{% console collections.all[0] %}{% endraw %}</code></p>
+    <h3>Output</h3>
+    {% console collections.all[0] %}
+    <hr />
+
+    <!-- Debugging remove keys -->
+    <h2>Debugging remove keys</h2>
+    {% console object, { 
+        title: "object"
+    } %}
+
+    {% console object, { 
+        title: "object",  
+        removeKeys: [ 
+            'template'
+        ] 
+    } %}
+
+    {% console object, { 
+        title: "object",  
+        removeKeys: [ 
+            { 'template': 'Removed for performance reasons Yippie' }
+        ] 
+    } %}
+
+    {% console object, { 
+        title: "object – showTemplate: true",  
+        showTemplate: true
+    } %}
 </body>
 
 </html>
-

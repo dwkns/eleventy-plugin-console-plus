@@ -10,7 +10,7 @@
  *   - Custom classes and edge cases
  */
 import { describe, it, expect } from 'vitest';
-import { stringifyPlus } from './stringify-plus.js';
+import { stringifyPlus } from '../lib/stringify-plus.js';
 
 // No Eleventy, fs, or path needed since file output is removed
 
