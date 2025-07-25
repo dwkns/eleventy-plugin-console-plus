@@ -4,12 +4,6 @@
   "description": "An enhanced console.log for Eleventy with HTML output, terminal logging, and browser console support",
   "main": "index.js",
   "type": "module",
-  "packageManager": "yarn@4.9.2",
-  "files": [
-    "index.js",
-    "lib/",
-    "README.md"
-  ],
   "exports": {
     "import": "./index.js",
     "require": "./index.cjs"
@@ -51,10 +45,7 @@
     "node": ">=18.0.0"
   },
   "peerDependencies": {
-    "@11ty/eleventy": "^3.0.0"
-  },
-  "dependencies": {
-    "escape-html": "^1.0.3"
+    "@11ty/eleventy": "^3.1.2"
   },
   "devDependencies": {
     "@11ty/eleventy": "^3.1.2",
