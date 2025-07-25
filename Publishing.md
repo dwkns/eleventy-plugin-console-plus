@@ -130,13 +130,20 @@ npm dist-tag rm eleventy-plugin-console-plus next
 To create a CommonJS (CJS) module from the ES module source:
 
 ```bash
-npx rollup index.js --file index.cjs --format cjs
+npx rollup -c
+```
+
+Or without a config file:
+
+```bash
+npx rollup index.js --file index.cjs --format cjs --external util
 ```
 
 This command:
 - Takes the ES module `index.js` as input
 - Outputs a CommonJS module to `index.cjs`
 - Uses the `cjs` format for CommonJS compatibility
+- Treats Node.js built-in modules (like `util`) as external dependencies
 
 This is useful for ensuring compatibility with environments that don't support ES modules.
 

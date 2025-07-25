@@ -36,7 +36,7 @@ export const CONSOLE_PLUS_DEFAULTS = {
 
 import { logToTerminal, LOG_TO_TERMINAL_DEFAULTS } from "./lib/logToTerminal.js";
 import { stringifyPlus, STRINGIFY_PLUS_DEFAULTS } from "./lib/stringify-plus.js";
-import jsonViewer, { JSON_VIEWER_DEFAULTS } from "./lib/json-viewer.js";
+import { jsonViewer, JSON_VIEWER_DEFAULTS } from "./lib/json-viewer.js";
 
 function mergeAllOptions({
   libDefaults = {},
@@ -116,5 +116,4 @@ function consolePlus(eleventyConfig, pluginRegistrationOptions = {}) {
   });
 }
 
-export default consolePlus;
 export { consolePlus };

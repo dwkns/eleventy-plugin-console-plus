@@ -8,7 +8,7 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { JSDOM } from 'jsdom';
-import jsonViewer from '../lib/json-viewer.js';
+import { jsonViewer } from '../lib/json-viewer.js';
 import { stringifyPlus } from '../lib/stringify-plus.js';
 
 // Helper to extract HTML from the viewer
@@ -194,10 +194,9 @@ describe('json-viewer', () => {
   });
 
   // --- API usage ---
-  it('exports jsonViewer as default and named export', () => {
-    // Import the module directly for API tests
-    const mod = require('../lib/json-viewer.js');
-    expect(typeof mod.default).toBe('function');
+  it('exports jsonViewer as named export', async () => {
+    // Import the module directly for API tests using dynamic import
+    const mod = await import('../lib/json-viewer.js');
     expect(typeof mod.jsonViewer).toBe('function');
   });
 }); 
