@@ -125,6 +125,23 @@ npm dist-tag rm eleventy-plugin-console-plus next
 
 ---
 
+## Creating a CJS Module
+
+To create a CommonJS (CJS) module from the ES module source:
+
+```bash
+npx rollup index.js --file index.cjs --format cjs
+```
+
+This command:
+- Takes the ES module `index.js` as input
+- Outputs a CommonJS module to `index.cjs`
+- Uses the `cjs` format for CommonJS compatibility
+
+This is useful for ensuring compatibility with environments that don't support ES modules.
+
+---
+
 ## References
 - [How to Prerelease an npm Package (Cloud Four)](https://cloudfour.com/thinks/how-to-prerelease-an-npm-package/)
 - [npm version docs](https://docs.npmjs.com/cli/v10/commands/npm-version)

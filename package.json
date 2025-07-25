@@ -10,6 +10,10 @@
     "lib/",
     "README.md"
   ],
+  "exports": {
+    "import": "./index.js",
+    "require": "./index.cjs"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
