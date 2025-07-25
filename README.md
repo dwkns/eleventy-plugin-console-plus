@@ -1,6 +1,10 @@
+
+
 # eleventy-plugin-console-plus
 
-**Console Plus** is a powerful Eleventy (11ty) plugin and shortcode for debugging your templates, objects, and data. It logs to your HTML output, your terminal, and your browser console—all at once, with beautiful formatting and deep customization.
+**Console Plus** is a Eleventy (11ty) plugin that adds a shortcode for debugging your templates, objects, and data. It logs to your HTML output, your terminal, and your browser console—all at once, with beautiful formatting and deep customization.
+
+If you've ever tried to debug collections or any other complex object in Eleventy this is for you. 
 
 ---
 
@@ -9,9 +13,7 @@
 - Pretty-prints any value (object, array, string, etc.) in your template, terminal, and browser console
 - Collapsible, interactive HTML viewer with type labels, key paths, and more
 - Handles circular references, functions, symbols, BigInts, Dates, and undefined
-- Hide or replace sensitive keys (e.g., secrets, templates)
-- Full control over output destinations and formatting
-- Four-level options system: shortcode > plugin registration > plugin defaults > library defaults
+- Hide or replace keys to reduce output complexity.
 - Works with Eleventy v3+ (ESM)
 
 ---
@@ -20,96 +22,118 @@
 
 ```bash
 npm install eleventy-plugin-console-plus
-# or
-yarn add eleventy-plugin-console-plus
 ```
 
 ---
 
 ## ⚡ Quick Start
 
-In your `.eleventy.js` or `eleventy.config.js`:
+In your `eleventy.config.js`:
 
 ```js
 import consolePlus from 'eleventy-plugin-console-plus';
 
 export default function(eleventyConfig) {
-  eleventyConfig.addPlugin(consolePlus, {
-    // Optional: set global plugin options here
-    logToHtml: true,
-    logToTerminal: true,
-    logToBrowserConsole: true,
-    colorizeConsole: true,
-    depth: 4,
-    breakLength: 60
-  });
+  eleventyConfig.addPlugin(consolePlus);
 }
 ```
 
 In your template:
 
 ```njk
-{% console myObject, { title: "Debug myObject" } %}
+  {% console  { string: "Hello, World!", number: 123 } %}
 ```
+
+Outputs to your HTML as:
+
+![HTML Output](1.png)
 
 ---
 
 ## 🛠️ Usage
 
-### 1. **Basic Usage**
+An object, string, variable or array is required as the first argument. A title and configurantion options are optional.
 
-```njk
-{% console "Hello, world!" %}
-{% console 123 %}
-{% console myArray %}
-{% console myObject %}
+```
+{% console <value - required >, <"title" — optional>, <{options} — optional> %}
 ```
 
-### 2. **With a Title**
+## Examples
 
-```njk
-{% console myObject, { title: "My Object" } %}
+Assume we have the following variable:
+
+```js
+ obj = {
+        string: "Some String",
+        number: 42,
+        boolean: true,
+        nullValue: null,
+        undefinedValue: undefined,
+        array: [1, 2, 3],
+        object: { key: "value" },
+        nestedArray: [{ a: 1 }, { b: 2 }],
+        nestedObject: { inner: { key: "innerValue" } },
+        template: { key1: "value1", key2: "value2", array: [1, 2, 3] }
+ 		}
 ```
 
-### 3. **Controlling Output Destinations**
+### 1. **With a Title**
 
 ```njk
-{% console myObject, { logToHtml: true, logToTerminal: false, logToBrowserConsole: true } %}
+{% console obj, "My Object" %}
 ```
 
-### 4. **Hiding or Replacing Keys**
+![HTML Output](2.png)
+
+Show tpyes
+
+default expanded 
+
+### 2. **Showing Template Keys**
+
+By default any key named `template` has it's value removed for performance reasons. Eleventy puts a TON of stuff in the `template` key of your page and in collections. You almost never need it. But if you do...
+```njk
+{% console obj, { showTemplate: true } %}
+```
+
+![HTML Output](3.png)
+
+### 3. **Hiding or replacing keys**
+
+Similarly sometimes your data contains a large nested structure that you're not interested in. You can exclude or replace this in the output with...
 
 ```njk
-{% console myObject, { removeKeys: ["secret", { keyName: "password", replaceString: "***" }] } %}
+{% console myObject, { removeKeys: ["nestedArray", { keyName: "nestedObject", replaceString: "***" }] } %}
 ```
 
-### 5. **Showing Template Keys**
+![HTML Output](4.png)
 
-```njk
-{% console myObject, { showTemplate: true } %}
+## ⚙️ Configuration
+
+You can pass a configuration object when you add the plugin. 
+
+In your `eleventy.config.js`:
+
+```js
+import consolePlus from 'eleventy-plugin-console-plus';
+
+export default function(eleventyConfig) {
+  eleventyConfig.addPlugin(consolePlus, { 
+  	logToHtml: true,  				 // output to HTML
+  	logToTerminal: false, 		 // output to terminal
+  	logToBrowserConsole: false,// output to browser console
+  	showTemplate: true         // always show template key
+  } );
+}
 ```
+These options will apply to all instances of the shortcode. Unless you overide them on a case by case basis.
 
-### 6. **Customizing the HTML Viewer**
-
-```njk
-{% console myObject, { showTypes: true, showControls: true, defaultExpanded: true, pathsOnHover: true, indentWidth: 12 } %}
+```html
+	{% console obj, "My Object", { showTemplate: false, logToTerminal: true,  } %}
 ```
+`template` will not be shown and output will be logged to terminal  in this instance of the shortcode. 
 
-### 7. **Handling Circular References**
-
-```njk
-{% set obj = { a: 1 } %}
-{% set obj = obj.self = obj %}
-{% console obj %}
-```
-
-### 8. **Option Precedence**
-
-Options are merged in this order (highest wins):
-1. Options passed in the shortcode
-2. Options set in `addPlugin(consolePlus, options)`
-3. Plugin defaults (see below)
-4. Library defaults (see source for each lib)
+You can see the full configurations options below. 
 
 ---
 
@@ -137,40 +161,21 @@ Options are merged in this order (highest wins):
 
 ## 🖼️ Screenshots
 
-### HTML Output
-![HTML Output](./template.png)
+HTML output
 
-### Terminal Output
-![Terminal Output](./terminal.png)
+![HTML Output](7.png)
 
-### Browser Console Output
-![Browser Console Output](./browser-console.png)
+Browser Console output
 
-> **Tip:** Add more screenshots for key hiding, circular references, and advanced viewer features as needed.
+![HTML Output](8.png)
 
----
+Terminal output
 
-## ❓ Troubleshooting & FAQ
+![HTML Output](9.png)
 
-- **Q: Why don't I see output in my terminal?**  
-  A: Make sure `logToTerminal` is true and your Eleventy process is running in a terminal that supports color.
-
-- **Q: Why are some keys hidden or replaced?**  
-  A: Check your `removeKeys` and `showTemplate` options.
-
-- **Q: How do I debug circular references?**  
-  A: The plugin will show `[Circular Ref: ...]` in the output.
-
-- **Q: Can I use this in CommonJS Eleventy?**  
-  A: Use version 0.0.3 for CommonJS support.
-
----
-
-## 📝 Changelog
-
-See [CHANGELOG.md](./CHANGELOG.md) for release notes.
-
----
+## Notable Updates
+1.0.0  (latest) — Rewritten from scratch, improved HTML output, better plugin naming
+0.1.1 Added logging to browser console & option to wrap line length.
 
 ## 📄 License
 

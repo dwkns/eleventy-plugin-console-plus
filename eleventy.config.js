@@ -3,7 +3,7 @@ import consolePlus from './index.js';
 /** @param {import("@11ty/eleventy").UserConfig} eleventyConfig */
 export default (eleventyConfig) => {
   eleventyConfig.addPlugin(consolePlus, {
-    logToTerminal: false, // log to terminal
+    logToTerminal: true, // log to terminal
     logToBrowserConsole: true, // log to browser console
     logToHtml: true, // log to HTML
   } );

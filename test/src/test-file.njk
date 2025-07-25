@@ -1,6 +1,25 @@
----
-title: "Console Plus Comprehensive Examples"
-permalink: "/"
+---js
+
+const bi = BigInt(9007199254740991)
+const func = ()=>{}
+const array = [ 1, 2, "a", "b", {a:1}]
+const obj = {
+    "item1": {
+      "SubItem1": "abc",
+      "SubItem2": "abc",
+      "SubItem3": {
+        "SubSubItem": "abc"
+      }
+    },
+    "Item2": "abc",
+    "Item3": "abc",
+    bi,
+    func,
+   array,
+  }
+
+const title = "Console Plus Comprehensive Examples"
+const permalink = "/"
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -28,6 +47,22 @@ permalink: "/"
     </style>
 </head>
 <body>
+  
+    {% console  {
+        string: "Some String",
+        number: 42,
+        boolean: true,
+        nullValue: null,
+        undefinedValue: undefined,
+        array: [1, 2, 3],
+        object: { key: "value" },
+        nestedArray: [{ a: 1 }, { b: 2 }],
+        nestedObject: { inner: { key: "innerValue" } }
+    } %}
+
+       {% console  { a: "a", b: "b"} %}
+       {% console obj %}
+
     <!-- 0. Comparison with dump and undefined -->
     <h2>Comparison with <code>dump</code> (with <code>undefined</code>)</h2>
     <p>This example shows how <code>dump</code> and <code>console</code> handle <code>undefined</code> values in objects.</p>
@@ -244,3 +279,8 @@ permalink: "/"
     </ul>
 </body>
 </html>
+
+
+
+
+
