@@ -14,7 +14,7 @@ If you've ever tried to debug collections or any other complex object in Elevent
 - Collapsible, interactive HTML viewer with type labels, key paths, and more
 - Handles circular references, functions, symbols, BigInts, Dates, and undefined
 - Hide or replace keys to reduce output complexity.
-- Works with Eleventy v3+ (ESM)
+- Works with Eleventy v3+ (ESM & CJS)
 
 ---
 
@@ -28,15 +28,29 @@ npm install eleventy-plugin-console-plus
 
 ## ⚡ Quick Start
 
-In your `eleventy.config.js`:
+In your `eleventy.config.js` :
+
+#### ES6
 
 ```js
-import consolePlus from 'eleventy-plugin-console-plus';
+import { consolePlus } from 'eleventy-plugin-console-plus';
 
 export default function(eleventyConfig) {
   eleventyConfig.addPlugin(consolePlus);
 }
 ```
+
+#### CJS
+
+```js
+const { consolePlus } = require("eleventy-plugin-console-plus");
+
+module.exports = async function(eleventyConfig) {
+  eleventyConfig.addPlugin(consolePlus);
+};
+```
+
+
 
 In your template:
 
