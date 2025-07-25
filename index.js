@@ -36,15 +36,8 @@ export const CONSOLE_PLUS_DEFAULTS = {
 
 import { logToTerminal, LOG_TO_TERMINAL_DEFAULTS } from "./lib/logToTerminal.js";
 import { stringifyPlus, STRINGIFY_PLUS_DEFAULTS } from "./lib/stringify-plus.js";
-import { jsonViewer, JSON_VIEWER_DEFAULTS } from "./lib/json-viewer.js";
+import jsonViewer, { JSON_VIEWER_DEFAULTS } from "./lib/json-viewer.js";
 
-/**
- * Merge options in the correct order of precedence:
- * 1. lib defaults
- * 2. plugin defaults
- * 3. plugin registration options
- * 4. shortcode options
- */
 function mergeAllOptions({
   libDefaults = {},
   pluginDefaults = {},
@@ -55,13 +48,34 @@ function mergeAllOptions({
 }
 
 /**
- * Console Plus plugin for Eleventy
- * Provides enhanced logging capabilities for debugging Eleventy projects
- * @param {Object} eleventyConfig - Eleventy configuration object
- * @param {Object} pluginRegistrationOptions - Plugin configuration options
+ * Flexible argument parser for the console shortcode.
+ * Supports:
+ *   - value
+ *   - value, "title"
+ *   - value, { options }
+ *   - value, "title", { options }
+ *   - value, { title: "title", ... }
+ * Returns: { value, options }
  */
+function parseConsoleArgs(args) {
+  const [value, arg2, arg3] = args;
+  let options = {};
+  if (typeof arg2 === 'string' && arg3 && typeof arg3 === 'object') {
+    // value, "title", { options }
+    options = { ...arg3, title: arg2 };
+  } else if (typeof arg2 === 'string') {
+    // value, "title"
+    options = { title: arg2 };
+  } else if (arg2 && typeof arg2 === 'object') {
+    // value, { options }
+    options = { ...arg2 };
+  } // else: value only
+  return { value, options };
+}
+
 function consolePlus(eleventyConfig, pluginRegistrationOptions = {}) {
-  eleventyConfig.addAsyncShortcode("console", async (value, shortcodeOptions = {}) => {
+  eleventyConfig.addAsyncShortcode("console", async function(...args) {
+    const { value, options: shortcodeOptions } = parseConsoleArgs(args);
     // Merge all options for each lib
     const mergedTerminalOptions = mergeAllOptions({
       libDefaults: LOG_TO_TERMINAL_DEFAULTS,
