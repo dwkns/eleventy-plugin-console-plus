@@ -1,6 +1,6 @@
 {
   "name": "eleventy-plugin-console-plus",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "description": "An enhanced console.log for Eleventy with HTML output, terminal logging, and browser console support",
   "main": "index.js",
   "type": "module",
