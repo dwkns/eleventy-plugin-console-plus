@@ -1,5 +1,7 @@
 'use strict';
 
+Object.defineProperty(exports, '__esModule', { value: true });
+
 var util = require('util');
 
 /**
@@ -1331,3 +1333,4 @@ function consolePlus(eleventyConfig, pluginRegistrationOptions = {}) {
 
 exports.CONSOLE_PLUS_DEFAULTS = CONSOLE_PLUS_DEFAULTS;
 exports.consolePlus = consolePlus;
+exports.default = consolePlus;

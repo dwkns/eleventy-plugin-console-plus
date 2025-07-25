@@ -117,3 +117,4 @@ function consolePlus(eleventyConfig, pluginRegistrationOptions = {}) {
 }
 
 export { consolePlus };
+export default consolePlus;
