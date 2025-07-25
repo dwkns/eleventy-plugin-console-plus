@@ -1,21 +1,22 @@
 ---js
 
 const bi = BigInt(9007199254740991)
-const func = ()=>{}
+const namedFunction = ()=>{}
 const array = [ 1, 2, "a", "b", {a:1}]
 const obj = {
-    "item1": {
-      "SubItem1": "abc",
-      "SubItem2": "abc",
-      "SubItem3": {
-        "SubSubItem": "abc"
-      }
-    },
-    "Item2": "abc",
-    "Item3": "abc",
+    string: "Some String",
+    number: 42,
     bi,
-    func,
-   array,
+    array,
+    namedFunction,
+    boolean: true,
+    nullValue: null,
+    undefinedValue: undefined,
+    array: [1, 2, 3],
+    object: { key: "value" },
+    nestedArray: [{ a: 1 }, { b: 2 }],
+    nestedObject: { inner: { key: "innerValue" } }
+   
   }
 
 const title = "Console Plus Comprehensive Examples"
@@ -48,19 +49,7 @@ const permalink = "/"
 </head>
 <body>
   
-    {% console  {
-        string: "Some String",
-        number: 42,
-        boolean: true,
-        nullValue: null,
-        undefinedValue: undefined,
-        array: [1, 2, 3],
-        object: { key: "value" },
-        nestedArray: [{ a: 1 }, { b: 2 }],
-        nestedObject: { inner: { key: "innerValue" } }
-    } %}
 
-       {% console  { a: "a", b: "b"} %}
        {% console obj %}
 
     <!-- 0. Comparison with dump and undefined -->
