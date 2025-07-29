@@ -1,32 +1,55 @@
 {
   "name": "eleventy-plugin-console-plus",
-  "version": "0.0.6",
-  "description": "An enhanced console.log for Eleventy",
-  "main": "index.js",
+  "version": "1.0.0-alpha.7",
+  "description": "An enhanced console.log for Eleventy with HTML output, terminal logging, and browser console support",
+  "main": "index.cjs",
+  "type": "module",
+  "exports": {
+    "import": "./index.js",
+    "require": "./index.cjs"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "dev": "npx @11ty/eleventy --serve",
+    "build": "npx rollup -c",
+    "pub": "npm publish"
+  },
+  "keywords": [
+    "eleventy",
+    "11ty",
+    "plugin",
+    "console",
+    "debug",
+    "logging",
+    "development",
+    "templating"
+  ],
+  "author": {
+    "name": "dwkns",
+    "url": "https://github.com/dwkns"
+  },
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dwkns/eleventy-plugin-console-plus.git"
   },
-  "scripts": {
-    "pub": "#### use ./bin/pub ### to publlish to npm"
-  },
-  "keywords": [
-    "eleventy",
-    "dwkns"
-  ],
-  "author": "dwkns",
-  "license": "MIT",
-  "dependencies": {
-    "escape-html": "^1.0.3"
-  },
   "bugs": {
     "url": "https://github.com/dwkns/eleventy-plugin-console-plus/issues"
   },
-  "type": "module",
-  "eslintConfig": {
-    "parserOptions": {
-      "ecmaVersion": 2020
-    }
+  "homepage": "https://github.com/dwkns/eleventy-plugin-console-plus#readme",
+  "engines": {
+    "node": ">=18.0.0"
   },
-  "homepage": "https://github.com/dwkns/eleventy-plugin-console-plus#readme"
+  "peerDependencies": {
+    "@11ty/eleventy": "^3.1.2"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^3.1.2",
+    "@vitest/coverage-v8": "3.2.4",
+    "jsdom": "^26.1.0",
+    "rimraf": "^6.0.1",
+    "vitest": "^3.2.1"
+  }
 }

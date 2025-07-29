@@ -1,0 +1,275 @@
+---js
+
+const bi = BigInt(9007199254740991)
+const namedFunction = ()=>{}
+const array = [ 1, 2, "a", "b", {a:1}]
+const obj = {
+    string: "Some String",
+    number: 42,
+    bi,
+    array,
+    namedFunction,
+    boolean: true,
+    nullValue: null,
+    undefinedValue: undefined,
+    array: [1, 2, 3],
+    object: { key: "value" },
+    nestedArray: [{ a: 1 }, { b: 2 }],
+    nestedObject: { inner: { key: "innerValue" } }
+   
+  }
+
+const title = "Console Plus Comprehensive Examples"
+const permalink = "/"
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+    <style>
+        body { margin: auto; padding: 20px; }
+        hr { margin-top: 1rem; margin-bottom: 1rem; }
+        pre, code {
+            white-space: pre-wrap;
+            overflow-x: auto;
+            word-wrap: break-word;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        code {
+            vertical-align: middle;
+        }
+        pre code {
+            vertical-align: initial;
+        }
+    </style>
+</head>
+<body>
+  
+
+       {% console obj %}
+
+    <!-- 0. Comparison with dump and undefined -->
+    <h2>Comparison with <code>dump</code> (with <code>undefined</code>)</h2>
+    <p>This example shows how <code>dump</code> and <code>console</code> handle <code>undefined</code> values in objects.</p>
+    <h3>Input (dump):</h3>
+    <pre><code>{% raw %}{{ { a: "a", b: undefined } | dump }}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {{ { a: "a", b: undefined } | dump }}
+    <h3>Input (console):</h3>
+    <pre><code>{% raw %}{% console { a: "a", b: undefined } %}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% console { a: "a", b: undefined } %}
+    <hr />
+
+    <!-- 1. Comparison with dump -->
+    <h2>Comparison with Eleventy's <code>dump</code> Filter</h2>
+    <p>Use <code>dump</code> for a quick, raw look at your data. Use <code>console</code> for a much richer, interactive, and multi-destination debug experience.</p>
+    <h3>Input (dump):</h3>
+    <pre><code>{% raw %}{% set object = {
+    a: 1,
+    template: { big: "data", nested: { foo: "bar" } },
+    b: { template: { x: 1 } },
+    secret: '12345',
+    hidden: 'should hide',
+    visible: 'ok',
+    arr: [1, 2, 3],
+    nested: { deep: { value: 42 } }
+} %}
+{{ object | dump }}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% set object = {
+        a: 1,
+        template: { big: "data", nested: { foo: "bar" } },
+        b: { template: { x: 1 } },
+        secret: '12345',
+        hidden: 'should hide',
+        visible: 'ok',
+        arr: [1, 2, 3],
+        nested: { deep: { value: 42 } }
+    } %}
+    {{ object | dump }}
+    <h3>Input (console):</h3>
+    <pre><code>{% raw %}{% set object = {
+      a: 1,
+      template: { big: "data", nested: { foo: "bar" } },
+      b: { template: { x: 1 } },
+      secret: '12345',
+      hidden: 'should hide',
+      visible: 'ok',
+      arr: [1, 2, 3],
+      nested: { deep: { value: 42 } }
+  } %}
+  {% console object %}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% console object %}
+    <hr />
+
+    <!-- 2. Basic Usage -->
+    <h2>Basic Usage</h2>
+    <p>Log any value to HTML, terminal, and browser console. No options needed.</p>
+    <pre><code>{% raw %}{% console "Hello, world!" %}
+{% console 123 %}
+{% console [1,2,3] %}
+{% console object %}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% console "Hello, world!" %}
+    {% console 123 %}
+    {% console [1,2,3] %}
+    {% console object %}
+    <hr />
+
+    <!-- 3. Adding a Title -->
+    <h2>Adding a Title</h2>
+    <p>Pass a string as the second argument to label your output in all destinations.</p>
+    <pre><code>{% raw %}{% console object, "My Object" %}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% console object, "My Object" %}
+    <hr />
+
+    <!-- 4. Using Options -->
+    <h2>Using Options</h2>
+    <p>Pass an options object to control output destinations, formatting, and more.</p>
+    <pre><code>{% raw %}{% console object, { logToHtml: true, logToTerminal: false, logToBrowserConsole: true } %}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% console object, { logToHtml: true, logToTerminal: false, logToBrowserConsole: true } %}
+    <hr />
+
+    <!-- 5. Title and Options Together -->
+    <h2>Title and Options Together</h2>
+    <p>Use a string for the title and an object for options. The title will be shown in all outputs.</p>
+    <pre><code>{% raw %}{% console object, "Titled with Options", { showTypes: true, showControls: true } %}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% console object, "Titled with Options", { showTypes: true, showControls: true } %}
+    <hr />
+
+    <!-- 6. Title in Options Object -->
+    <h2>Title in Options Object</h2>
+    <p>You can also specify the title inside the options object.</p>
+    <pre><code>{% raw %}{% console object, { title: "Title in Options", showTypes: true } %}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% console object, { title: "Title in Options", showTypes: true } %}
+    <hr />
+
+    <!-- 7. Hiding or Replacing Keys -->
+    <h2>Hiding or Replacing Keys</h2>
+    <p>Use <code>removeKeys</code> to hide or replace sensitive or noisy keys.</p>
+    <pre><code>{% raw %}{% console object, { removeKeys: ["secret", { keyName: "hidden", replaceString: "***" }] } %}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% console object, { removeKeys: ["secret", { keyName: "hidden", replaceString: "***" }] } %}
+    <hr />
+
+    <!-- 8. Showing Template Keys -->
+    <h2>Showing Template Keys</h2>
+    <p>By default, <code>template</code> keys are hidden for performance. Use <code>showTemplate: true</code> to display them.</p>
+    <pre><code>{% raw %}{% console object, { showTemplate: true } %}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% console object, { showTemplate: true } %}
+    <hr />
+
+    <!-- 9. Handling Circular References -->
+    <h2>Handling Circular References</h2>
+    <p>The plugin will safely display circular references in your data. <br>
+    <strong>Note:</strong> True circular references must be created in JavaScript/data files, not in Nunjucks templates. This example simulates a circular reference for demonstration.</p>
+    <pre><code>{% raw %}{# In real use, create a circular object in JS/data, e.g.:
+# let circ = { foo: 1 }; circ.self = circ; #}
+{% set circ = { foo: 1, self: '[Circular]' } %}
+{% console circ %}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% set circ = { foo: 1, self: '[Circular]' } %}
+    {% console circ %}
+    <hr />
+
+    <!-- 10. Arrays, Numbers, Strings -->
+    <h2>Arrays, Numbers, and Strings</h2>
+    <p>All primitive and array types are supported.</p>
+    <pre><code>{% raw %}{% console ["a", "b", 3] %}
+{% console 42 %}
+{% console "A string value" %}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% console ["a", "b", 3] %}
+    {% console 42 %}
+    {% console "A string value" %}
+    <hr />
+
+    <!-- 11. Output Destinations -->
+    <h2>Controlling Output Destinations</h2>
+    <p>Choose where your debug info appears: HTML, terminal, browser console, or any combination.</p>
+    <pre><code>{% raw %}{% console object, { logToHtml: false, logToTerminal: true, logToBrowserConsole: false } %}{% endraw %}</code></pre>
+    <h3>Output (should only appear in terminal):</h3>
+    {% console object, { logToHtml: false, logToTerminal: true, logToBrowserConsole: false } %}
+    <hr />
+
+    <!-- 12. Advanced: All Options -->
+    <h2>Advanced Example: All Options</h2>
+    <p>This example demonstrates all major options in use. Use this as a reference for complex debugging needs.</p>
+    <pre><code>{% raw %}{% console object, "All Options Example", {
+    logToHtml: true,
+    logToTerminal: true,
+    logToBrowserConsole: true,
+    colorizeConsole: true,
+    depth: 4,
+    breakLength: 40,
+    showTemplate: true,
+    maxCircularDepth: 2,
+    removeKeys: ["secret", { keyName: "hidden", replaceString: "***" }],
+    showTypes: true,
+    defaultExpanded: true,
+    pathsOnHover: true,
+    showControls: true,
+    indentWidth: 10
+} %}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% console object, "All Options Example", {
+        logToHtml: true,
+        logToTerminal: true,
+        logToBrowserConsole: true,
+        colorizeConsole: true,
+        depth: 4,
+        breakLength: 40,
+        showTemplate: true,
+        maxCircularDepth: 2,
+        removeKeys: ["secret", { keyName: "hidden", replaceString: "***" }],
+        showTypes: true,
+        defaultExpanded: true,
+        pathsOnHover: true,
+        showControls: true,
+        indentWidth: 10
+    } %}
+    <hr />
+
+    <!-- 13. Flexible Argument Patterns Recap -->
+    <h2>Flexible Argument Patterns Recap</h2>
+    <p>All of the following are valid and equivalent ways to use the shortcode:</p>
+    <pre><code>{% raw %}{% console object %}
+{% console object, "Title" %}
+{% console object, "Title", { showTypes: true } %}
+{% console object, { showTypes: true } %}
+{% console object, { title: "Title", showTypes: true } %}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% console object %}
+    {% console object, "Title" %}
+    {% console object, "Title", { showTypes: true } %}
+    {% console object, { showTypes: true } %}
+    {% console object, { title: "Title", showTypes: true } %}
+    <hr />
+
+    <h2>Guidelines</h2>
+    <ul>
+        <li>Use <code>console</code> for rich, multi-destination debugging in Eleventy projects.</li>
+        <li>Use <code>title</code> to label your output for clarity.</li>
+        <li>Use <code>removeKeys</code> and <code>showTemplate</code> to control sensitive or verbose data.</li>
+        <li>Use options to control output destinations and viewer features as needed.</li>
+        <li>All options can be set globally (in <code>addPlugin</code>) or per-shortcode.</li>
+        <li>See the README for a full list of options and advanced usage.</li>
+    </ul>
+</body>
+</html>
+
+
+
+
+
