@@ -23,11 +23,34 @@ const LOG_TO_TERMINAL_DEFAULTS = {
  * @param {Object} options - Logging options
  */
 const logToTerminal = (value, title, options = {}) => {
+  // Input validation
+  if (options && typeof options !== 'object') {
+    console.error('Error in logToTerminal: options must be an object');
+    return;
+  }
+
+  // Validate title parameter
+  if (title !== undefined && typeof title !== 'string') {
+    console.error('Error in logToTerminal: title must be a string');
+    return;
+  }
+
   const {
     colorizeConsole,
     depth,
     breakLength
   } = Object.assign({}, LOG_TO_TERMINAL_DEFAULTS, options);
+
+  // Validate numeric options
+  if (typeof depth !== 'number' || depth < 0 || depth > 100) {
+    console.error('Error in logToTerminal: depth must be a number between 0 and 100');
+    return;
+  }
+  
+  if (typeof breakLength !== 'number' || breakLength < 10 || breakLength > 1000) {
+    console.error('Error in logToTerminal: breakLength must be a number between 10 and 1000');
+    return;
+  }
 
   try {
     const titleString = title ? `[${title}]: ` : '';
@@ -78,31 +101,78 @@ const STRINGIFY_PLUS_DEFAULTS = {
  * @returns {Promise<string>} The compact stringified data
  */
 async function stringifyPlus(data, options = {}) {
+  // Input validation and security
+  if (options && typeof options !== 'object') {
+    throw new Error('Options must be an object');
+  }
+  
+  // Handle null/undefined options
+  if (options === null || options === undefined) {
+    options = {};
+  }
+  
+  // Prevent excessive depth to avoid DoS
+  const MAX_DEPTH = 100;
+  if (options.maxCircularDepth && options.maxCircularDepth > MAX_DEPTH) {
+    throw new Error(`maxCircularDepth cannot exceed ${MAX_DEPTH}`);
+  }
+  
+  // Prevent excessive input size - use a safer approach for circular references
+  const MAX_INPUT_SIZE = 10 * 1024 * 1024; // 10MB
+  let inputSize;
+  try {
+    inputSize = JSON.stringify(data).length;
+  } catch (error) {
+    // For circular references, estimate size based on string representation
+    inputSize = String(data).length;
+  }
+  if (inputSize > MAX_INPUT_SIZE) {
+    throw new Error(`Input size (${inputSize} bytes) exceeds maximum allowed size (${MAX_INPUT_SIZE} bytes)`);
+  }
+
   options = Object.assign({}, STRINGIFY_PLUS_DEFAULTS, options);
 
+  // Memoize replacement lookups for performance
+  const replacementCache = new Map();
+  
   function getReplacementForKey(key) {
-    if (key === 'template' && options.showTemplate) return null;
-    if (Array.isArray(options.removeKeys)) {
+    if (replacementCache.has(key)) {
+      return replacementCache.get(key);
+    }
+
+    let result = null;
+    
+    if (key === 'template' && options.showTemplate) {
+      result = null;
+    } else if (Array.isArray(options.removeKeys)) {
       for (const entry of options.removeKeys) {
         if (typeof entry === 'object' && entry !== null) {
           if (entry.keyName === key || entry[key] !== undefined) {
-            return entry.replaceString || entry[key];
+            result = entry.replaceString || entry[key];
+            break;
           }
         }
       }
-      for (const entry of options.removeKeys) {
-        if (typeof entry === 'string' && entry === key) {
-          if (key === 'template') {
-            return 'Removed for performance reasons. Use { showTemplate: true } to show it';
+      if (result === null) {
+        for (const entry of options.removeKeys) {
+          if (typeof entry === 'string' && entry === key) {
+            if (key === 'template') {
+              result = 'Removed for performance reasons. Use { showTemplate: true } to show it';
+            } else {
+              result = 'Replaced as key was in supplied removeKeys';
+            }
+            break;
           }
-          return 'Replaced as key was in supplied removeKeys';
         }
       }
     }
-    if (key === 'template' && !options.showTemplate) {
-      return 'Removed for performance reasons. Use { showTemplate: true } to show it';
+    
+    if (result === null && key === 'template' && !options.showTemplate) {
+      result = 'Removed for performance reasons. Use { showTemplate: true } to show it';
     }
-    return null;
+    
+    replacementCache.set(key, result);
+    return result;
   }
 
   const seen = new WeakMap();
@@ -142,7 +212,7 @@ async function stringifyPlus(data, options = {}) {
         }
       }
       if (!seen.has(value)) seen.set(value, path);
-      if (Object.prototype.hasOwnProperty.call(value, 'needsCheck')) {
+      if (Object.hasOwn(value, 'needsCheck')) {
         value.needsCheck = false;
       }
       return Array.isArray(value)
@@ -208,10 +278,18 @@ const JSON_VIEWER_DEFAULTS = {
 };
 
 // Web Component for JSON Viewer
-class JsonViewerComponent extends HTMLElement {
+class JsonViewerComponent extends (typeof HTMLElement !== 'undefined' ? HTMLElement : class {}) {
   constructor() {
     super();
-    this.attachShadow({ mode: 'open' });
+    if (typeof HTMLElement !== 'undefined') {
+      try {
+        this.attachShadow({ mode: 'open' });
+      } catch (error) {
+        // Fallback for browsers without Shadow DOM support
+        console.warn('Shadow DOM not supported, using fallback mode');
+        this._fallbackMode = true;
+      }
+    }
     this.options = { ...JSON_VIEWER_DEFAULTS };
     this.data = null;
     this._lastJson = null;
@@ -220,6 +298,9 @@ class JsonViewerComponent extends HTMLElement {
     this.currentlyOpenPanel = null;
     this.showTimer = null;
     this.hideTimer = null;
+    this._maxExpandedNodes = 1000; // Prevent memory leaks
+    this._debounceDelay = 100;
+    this._lastHoverTime = 0;
   }
 
   static get observedAttributes() {
@@ -238,12 +319,14 @@ class JsonViewerComponent extends HTMLElement {
   }
 
   setupEventListeners() {
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Alt' || e.key === 'Option') this.isOptionKeyPressed = true;
-    });
-    document.addEventListener('keyup', (e) => {
-      if (e.key === 'Alt' || e.key === 'Option') this.isOptionKeyPressed = false;
-    });
+    if (typeof document !== 'undefined') {
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Alt' || e.key === 'Option') this.isOptionKeyPressed = true;
+      });
+      document.addEventListener('keyup', (e) => {
+        if (e.key === 'Alt' || e.key === 'Option') this.isOptionKeyPressed = false;
+      });
+    }
   }
 
   getStyles() {
@@ -491,36 +574,100 @@ class JsonViewerComponent extends HTMLElement {
   }
 
   render() {
+    if (typeof HTMLElement === 'undefined') return;
+    
     const jsonData = this.getAttribute('data-json');
     const title = this.getAttribute('data-title') || '';
     
     if (!jsonData) return;
 
-    try {
-      const data = JSON.parse(jsonData);
-      this.data = data;
-      this._lastJson = jsonData;
-    } catch (e) {
-      console.error('Invalid JSON data:', jsonData);
+    // Input validation and sanitization
+    if (typeof jsonData !== 'string') {
+      console.error('Invalid data-json attribute: must be a string');
       return;
     }
 
-    // Create shadow DOM content
-    this.shadowRoot.innerHTML = `
-      <style>${this.getStyles()}</style>
-      <div class="json-viewer-container">
-        ${this.options.showControls ? this.createControlsHTML() : ''}
-        ${title ? `<div class="json-viewer-title">${title}</div>` : ''}
-        <div class="json-viewer-content"></div>
-      </div>
-    `;
+    // Prevent XSS by checking for script tags
+    if (jsonData.includes('<script') || jsonData.includes('javascript:')) {
+      console.error('Security warning: Potentially malicious content detected');
+      return;
+    }
 
-    const content = this.shadowRoot.querySelector('.json-viewer-content');
-    const root = this.createNode(null, this.data);
-    content.appendChild(root);
+    try {
+      const data = JSON.parse(jsonData);
+      
+      // Validate data size
+      const dataSize = JSON.stringify(data).length;
+      const MAX_DATA_SIZE = 5 * 1024 * 1024; // 5MB
+      if (dataSize > MAX_DATA_SIZE) {
+        console.error(`Data size (${dataSize} bytes) exceeds maximum allowed size (${MAX_DATA_SIZE} bytes)`);
+        return;
+      }
+      
+      this.data = data;
+      this._lastJson = jsonData;
+    } catch (e) {
+      console.error('Invalid JSON data:', e.message);
+      return;
+    }
+
+    // Create shadow DOM content with proper error handling
+    try {
+      const shadowRoot = this._fallbackMode ? this : this.shadowRoot;
+      const content = `
+        <style>${this.getStyles()}</style>
+        <div class="json-viewer-container">
+          ${this.options.showControls ? this.createControlsHTML() : ''}
+          ${title ? `<div class="json-viewer-title">${this.sanitizeHTML(title)}</div>` : ''}
+          <div class="json-viewer-content"></div>
+        </div>
+      `;
+      
+      if (this._fallbackMode) {
+        this.innerHTML = content;
+      } else {
+        shadowRoot.innerHTML = content;
+      }
+    } catch (error) {
+      console.error('Error rendering JSON viewer:', error);
+      return;
+    }
+
+    const contentElement = this._fallbackMode ? 
+      this.querySelector('.json-viewer-content') : 
+      this.shadowRoot.querySelector('.json-viewer-content');
+    
+    if (contentElement) {
+      const root = this.createNode(null, this.data);
+      contentElement.appendChild(root);
+    }
 
     // Set up event listeners
     this.setupComponentEventListeners();
+  }
+
+  // Sanitize HTML to prevent XSS
+  sanitizeHTML(str) {
+    if (typeof str !== 'string') return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // Debounced hover handler to improve performance
+  debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
   }
 
   createControlsHTML() {
@@ -542,9 +689,18 @@ class JsonViewerComponent extends HTMLElement {
   }
 
   setupComponentEventListeners() {
+    if (typeof HTMLElement === 'undefined') return;
+    
+    const root = this._fallbackMode ? this : this.shadowRoot;
+    
+    // Get elements using the appropriate method based on mode
+    const getElementById = this._fallbackMode ? 
+      (id) => this.querySelector(`#${id}`) : 
+      (id) => root.getElementById ? root.getElementById(id) : null;
+    
     // Controls toggle
-    const controlsToggle = this.shadowRoot.getElementById('controls-toggle');
-    const controls = this.shadowRoot.getElementById('controls');
+    const controlsToggle = getElementById('controls-toggle');
+    const controls = getElementById('controls');
     if (controlsToggle && controls) {
       controlsToggle.addEventListener('click', () => {
         controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
@@ -552,7 +708,7 @@ class JsonViewerComponent extends HTMLElement {
     }
 
     // Types checkbox
-    const typesCheckbox = this.shadowRoot.getElementById('types-checkbox');
+    const typesCheckbox = getElementById('types-checkbox');
     if (typesCheckbox) {
       typesCheckbox.addEventListener('change', () => {
         this.options.showTypes = typesCheckbox.checked;
@@ -561,7 +717,7 @@ class JsonViewerComponent extends HTMLElement {
     }
 
     // Paths checkbox
-    const pathsCheckbox = this.shadowRoot.getElementById('paths-checkbox');
+    const pathsCheckbox = getElementById('paths-checkbox');
     if (pathsCheckbox) {
       pathsCheckbox.addEventListener('change', () => {
         this.options.pathsOnHover = pathsCheckbox.checked;
@@ -571,7 +727,10 @@ class JsonViewerComponent extends HTMLElement {
   }
 
   updateDisplay() {
-    const typeLabels = this.shadowRoot.querySelectorAll('.json-viewer-type');
+    if (typeof HTMLElement === 'undefined') return;
+    
+    const root = this._fallbackMode ? this : this.shadowRoot;
+    const typeLabels = root.querySelectorAll('.json-viewer-type');
     typeLabels.forEach(label => {
       const node = label.closest('.json-viewer-node');
       const isRootLevel = !node.hasAttribute('data-key');
@@ -582,11 +741,14 @@ class JsonViewerComponent extends HTMLElement {
   }
 
   refresh() {
-    const content = this.shadowRoot.querySelector('.json-viewer-content');
+    if (typeof HTMLElement === 'undefined') return;
+    
+    const root = this._fallbackMode ? this : this.shadowRoot;
+    const content = root.querySelector('.json-viewer-content');
     if (content) {
       content.innerHTML = '';
-      const root = this.createNode(null, this.data);
-      content.appendChild(root);
+      const node = this.createNode(null, this.data);
+      content.appendChild(node);
       this.setupComponentEventListeners();
     }
   }
@@ -620,6 +782,8 @@ class JsonViewerComponent extends HTMLElement {
   }
 
   createPreviewNode(value) {
+    if (typeof document === 'undefined') return null;
+    
     const previewContainer = document.createElement('span');
     const type = this.getType(value);
 
@@ -699,6 +863,8 @@ class JsonViewerComponent extends HTMLElement {
   }
 
   createNode(key, value, path = '') {
+    if (typeof document === 'undefined') return null;
+    
     const node = document.createElement('div');
     node.className = 'json-viewer-node';
     
@@ -721,6 +887,12 @@ class JsonViewerComponent extends HTMLElement {
       toggle.className = 'json-viewer-toggle';
       toggle.textContent = isExpanded ? '▼' : '▶';
       toggle.addEventListener('click', () => {
+        // Prevent memory leaks by limiting expanded nodes
+        if (!isExpanded && this.expandedNodes.size >= this._maxExpandedNodes) {
+          console.warn('Maximum number of expanded nodes reached');
+          return;
+        }
+        
         if (isExpanded) {
           this.expandedNodes.delete(path);
         } else {
@@ -751,29 +923,30 @@ class JsonViewerComponent extends HTMLElement {
         copySpan.textContent = 'Copy';
         copySpan.addEventListener('click', (e) => {
           e.stopPropagation();
-          navigator.clipboard.writeText(path);
+          if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            navigator.clipboard.writeText(path);
+          }
         });
         panel.appendChild(copySpan);
 
         keyWrapper.appendChild(panel);
 
-        keySpan.addEventListener('mouseenter', () => {
+        // Debounced hover handlers for better performance
+        const debouncedMouseEnter = this.debounce(() => {
           if (this.currentlyOpenPanel) {
             this.currentlyOpenPanel.classList.remove('show');
           }
           panel.classList.add('show');
           this.currentlyOpenPanel = panel;
-        });
+        }, this._debounceDelay);
 
-        keySpan.addEventListener('mouseleave', () => {
-          if (this.hideTimer) {
-            clearTimeout(this.hideTimer);
-          }
-          this.hideTimer = setTimeout(() => {
-            panel.classList.remove('show');
-            this.currentlyOpenPanel = null;
-          }, 100);
-        });
+        const debouncedMouseLeave = this.debounce(() => {
+          panel.classList.remove('show');
+          this.currentlyOpenPanel = null;
+        }, this._debounceDelay);
+
+        keySpan.addEventListener('mouseenter', debouncedMouseEnter);
+        keySpan.addEventListener('mouseleave', debouncedMouseLeave);
       }
 
       keyWrapper.appendChild(keySpan);
@@ -849,10 +1022,13 @@ class JsonViewerComponent extends HTMLElement {
   }
 }
 
-// Register the custom element
-if (!customElements.get('json-viewer')) {
+// Register the custom element (only in browser environment)
+if (typeof customElements !== 'undefined' && !customElements.get('json-viewer')) {
   customElements.define('json-viewer', JsonViewerComponent);
 }
+
+// Track if we've added the registration script to this page
+let pageHasRegistrationScript = false;
 
 const JSONViewerModule = {
   /**
@@ -871,11 +1047,311 @@ const JSONViewerModule = {
   generate: (json, options = {}) => {
     // If json is already a string (from stringifyPlus), use it directly
     // Otherwise, stringify it
-    const jsonString = typeof json === 'string' ? json : JSON.stringify(json);
-    const escapedJsonString = jsonString.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    // The title will be rendered by JS if present
-    return `<json-viewer data-json='${escapedJsonString}' data-title='${options.title ? options.title.replace(/'/g, '&#39;').replace(/"/g, '&quot;') : ''}'></json-viewer>`;
+    let jsonString;
+    if (typeof json === 'string') {
+      jsonString = json;
+    } else if (json === null || json === undefined) {
+      jsonString = '';
+    } else {
+      try {
+        jsonString = JSON.stringify(json);
+      } catch (error) {
+        jsonString = '{"error": "Failed to stringify data"}';
+      }
+    }
+    
+    // Sanitize the JSON string to prevent XSS
+    const sanitizedJsonString = jsonString
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+    
+    // Sanitize title
+    const sanitizedTitle = options.title ? 
+      options.title
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;') : '';
+    
+    return `<json-viewer data-json='${sanitizedJsonString}' data-title='${sanitizedTitle}'></json-viewer>`;
   }
+};
+
+// Get the component registration script (only once per page)
+const getRegistrationScript = () => {
+  if (pageHasRegistrationScript) {
+    return '';
+  }
+  
+  pageHasRegistrationScript = true;
+  
+  return `
+if (!window.jsonViewerRegistered) {
+  window.jsonViewerRegistered = true;
+  
+  // Define the JSON Viewer Web Component
+  class JsonViewerComponent extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: 'open' });
+      this.options = {
+        showTypes: false,
+        defaultExpanded: false,
+        pathsOnHover: false,
+        showControls: false,
+        indentWidth: 6,
+        title: ''
+      };
+      this.data = null;
+      this._lastJson = null;
+      this.isOptionKeyPressed = false;
+      this.expandedNodes = new Set();
+      this.currentlyOpenPanel = null;
+      this.showTimer = null;
+      this.hideTimer = null;
+    }
+
+    static get observedAttributes() {
+      return ['data-json', 'data-title'];
+    }
+
+    connectedCallback() {
+      this.setupEventListeners();
+      this.render();
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+      if (oldValue !== newValue) {
+        this.render();
+      }
+    }
+
+    setupEventListeners() {
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Alt' || e.key === 'Option') this.isOptionKeyPressed = true;
+      });
+      document.addEventListener('keyup', (e) => {
+        if (e.key === 'Alt' || e.key === 'Option') this.isOptionKeyPressed = false;
+      });
+    }
+
+    getStyles() {
+      return \`
+        .json-viewer-container {
+          font-family: monospace;
+          line-height: 1.4;
+          color: #333;
+          background: #fff;
+          padding: 16px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          margin: 8px 0;
+        }
+        .json-viewer-title {
+          font-weight: bold;
+          font-size: 1.1em;
+          margin-bottom: 8px;
+        }
+        .json-viewer-node {
+          position: relative;
+        }
+        .json-viewer-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 4px;
+          padding-left: 16px;
+          min-height: 14px;
+        }
+        .json-viewer-toggle {
+          cursor: pointer;
+          user-select: none;
+          width: 14px;
+          height: 14px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          position: absolute;
+          left: 0;
+          top: 0;
+          color: #666;
+        }
+        .json-viewer-key {
+          color: #0066cc;
+          position: relative;
+          cursor: pointer;
+        }
+        .json-viewer-value {
+          color: #333;
+          flex: 1;
+        }
+        .json-viewer-string { color: #d63384; }
+        .json-viewer-number { color: #0d6efd; }
+        .json-viewer-boolean { color: #198754; }
+        .json-viewer-null { color: #6c757d; font-style: italic; }
+        .json-viewer-undefined { color: #6c757d; font-style: italic; }
+        .json-viewer-function { color: #fd7e14; font-style: italic; }
+        .json-viewer-symbol { color: #dc3545; font-style: italic; }
+        .json-viewer-bigint { color: #0d6efd; }
+        .json-viewer-array { color: #0d6efd; }
+        .json-viewer-object { color: #333; }
+        .json-viewer-expanded { display: block; }
+        .json-viewer-collapsed { display: none; }
+        .json-viewer-circ-ref { color: #dc3545; font-style: italic; }
+        .json-viewer-type { color: #666; font-size: 0.8em; margin: 0 4px; }
+        .json-viewer-count { color: #666; font-size: 0.8em; }
+        .json-viewer-date { color: #d63384; }
+      \`;
+    }
+
+    render() {
+      const jsonData = this.getAttribute('data-json');
+      const title = this.getAttribute('data-title') || '';
+      
+      if (!jsonData) return;
+
+      try {
+        const data = JSON.parse(jsonData);
+        this.data = data;
+        this._lastJson = jsonData;
+      } catch (e) {
+        console.error('Invalid JSON data:', jsonData);
+        return;
+      }
+
+      // Create shadow DOM content
+      this.shadowRoot.innerHTML = '<style>' + this.getStyles() + '</style><div class="json-viewer-container">' + (title ? '<div class="json-viewer-title">' + title + '</div>' : '') + '<div class="json-viewer-content"></div></div>';
+
+      const content = this.shadowRoot.querySelector('.json-viewer-content');
+      const root = this.createNode(null, this.data);
+      content.appendChild(root);
+    }
+
+    getType(value) {
+      if (value === null) return 'null';
+      if (Array.isArray(value)) return 'array';
+      if (value instanceof Date) return 'date';
+      if (typeof value === 'string' && value === '[ undefined ]') return 'undefined';
+      if (typeof value === 'string' && value.startsWith('[function') && value.endsWith(']')) return 'function';
+      if (typeof value === 'string' && value.startsWith('[Circular Ref:')) return 'Circular Ref';
+      return typeof value;
+    }
+
+    getCount(value) {
+      if (Array.isArray(value)) return value.length;
+      if (typeof value === 'object' && value !== null) return Object.keys(value).length;
+      return null;
+    }
+
+    createNode(key, value, path = '') {
+      const node = document.createElement('div');
+      node.className = 'json-viewer-node';
+      
+      if (key !== null) {
+        node.setAttribute('data-key', key);
+      }
+
+      const type = this.getType(value);
+      const count = this.getCount(value);
+      const isExpandable = (type === 'object' || type === 'array') && count > 0;
+      const isExpanded = this.options.defaultExpanded || this.expandedNodes.has(path);
+
+      // Create header
+      const header = document.createElement('div');
+      header.className = 'json-viewer-header';
+
+      // Create toggle button for expandable nodes
+      if (isExpandable) {
+        const toggle = document.createElement('span');
+        toggle.className = 'json-viewer-toggle';
+        toggle.textContent = isExpanded ? '▼' : '▶';
+        toggle.addEventListener('click', () => {
+          if (isExpanded) {
+            this.expandedNodes.delete(path);
+          } else {
+            this.expandedNodes.add(path);
+          }
+          this.render();
+        });
+        header.appendChild(toggle);
+      }
+
+      // Create key wrapper if there's a key
+      if (key !== null) {
+        const keySpan = document.createElement('span');
+        keySpan.className = 'json-viewer-key';
+        keySpan.textContent = '"' + key + '":';
+        header.appendChild(keySpan);
+      }
+
+      // Create value
+      const valueSpan = document.createElement('span');
+      valueSpan.className = 'json-viewer-value json-viewer-' + type;
+
+      if (isExpandable) {
+        if (isExpanded) {
+          // Show expanded content
+          const expandedContent = document.createElement('div');
+          expandedContent.className = 'json-viewer-expanded';
+          expandedContent.style.paddingLeft = this.options.indentWidth + 'px';
+
+          if (type === 'object') {
+            Object.entries(value).forEach(([k, v]) => {
+              const childPath = path ? path + '.' + k : k;
+              const childNode = this.createNode(k, v, childPath);
+              expandedContent.appendChild(childNode);
+            });
+          } else if (type === 'array') {
+            value.forEach((item, index) => {
+              const childPath = path + '[' + index + ']';
+              const childNode = this.createNode(index, item, childPath);
+              expandedContent.appendChild(childNode);
+            });
+          }
+
+          node.appendChild(header);
+          node.appendChild(expandedContent);
+        } else {
+          // Show collapsed preview
+          let previewText = '';
+          if (type === 'object') {
+            const keys = Object.keys(value);
+            previewText = keys.length === 0 ? '{}' : '{ ' + keys.slice(0, 3).map(k => '"' + k + '": ...').join(', ') + (keys.length > 3 ? ', ...' : '') + ' }';
+          } else if (type === 'array') {
+            previewText = '[' + value.length + ' items]';
+          }
+          valueSpan.textContent = previewText;
+          header.appendChild(valueSpan);
+          node.appendChild(header);
+        }
+      } else {
+        // Show simple value
+        let displayValue = value;
+        if (type === 'string') {
+          displayValue = '"' + value + '"';
+        } else if (type === 'null') {
+          displayValue = 'null';
+        } else if (type === 'undefined') {
+          displayValue = 'undefined';
+        }
+        valueSpan.textContent = displayValue;
+        header.appendChild(valueSpan);
+        node.appendChild(header);
+      }
+
+      return node;
+    }
+  }
+
+  // Register the custom element
+  if (!customElements.get('json-viewer')) {
+    customElements.define('json-viewer', JsonViewerComponent);
+  }
+}
+`;
 };
 
 /**
@@ -887,7 +1363,8 @@ const JSONViewerModule = {
 const jsonViewer = async function jsonViewer(processedJSON, options = {}) {
   options = Object.assign({}, JSON_VIEWER_DEFAULTS, options);
   const html = JSONViewerModule.generate(processedJSON, options);
-  return html;
+  const script = `<script>${getRegistrationScript()}</script>`;
+  return html + script;
 };
 
 /**
@@ -943,9 +1420,9 @@ function mergeAllOptions({
  *   - value, { options }
  *   - value, "title", { options }
  *   - value, { title: "title", ... }
- * Returns: { value, options }
+ * Returns: { value, options, variableName }
  */
-function parseConsoleArgs(args) {
+function parseConsoleArgs(args, variableName = null) {
   const [value, arg2, arg3] = args;
   let options = {};
   if (typeof arg2 === 'string' && arg3 && typeof arg3 === 'object') {
@@ -957,50 +1434,153 @@ function parseConsoleArgs(args) {
   } else if (arg2 && typeof arg2 === 'object') {
     // value, { options }
     options = { ...arg2 };
-  } // else: value only
-  return { value, options };
+  } else {
+    // value only - use variable name as title if available
+    if (variableName && !options.title) {
+      options = { title: variableName };
+    }
+  }
+  return { value, options, variableName };
 }
 
 function consolePlus(eleventyConfig, pluginRegistrationOptions = {}) {
+  // Validate plugin registration options
+  if (pluginRegistrationOptions && typeof pluginRegistrationOptions !== 'object') {
+    throw new Error('Plugin registration options must be an object');
+  }
+
+  // Add a named shortcode that explicitly takes variable name
+  eleventyConfig.addAsyncShortcode("consoleNamed", async function(variableName, value, options = {}) {
+    try {
+      // Input validation
+      if (!value) {
+        console.warn('Console shortcode called without value');
+        return '<div style="color: red;">Console shortcode called without value</div>';
+      }
+
+      const shortcodeOptions = typeof options === 'string' ? { title: options } : { ...options, title: variableName };
+
+      // Validate parsed options
+      if (shortcodeOptions && typeof shortcodeOptions !== 'object') {
+        console.warn('Invalid options passed to console shortcode');
+        return '<div style="color: red;">Invalid options passed to console shortcode</div>';
+      }
+
+      // Merge all options for each lib
+      const mergedTerminalOptions = mergeAllOptions({
+        libDefaults: LOG_TO_TERMINAL_DEFAULTS,
+        pluginDefaults: CONSOLE_PLUS_DEFAULTS,
+        pluginRegistration: pluginRegistrationOptions,
+        shortcode: shortcodeOptions
+      });
+      const mergedStringifyOptions = mergeAllOptions({
+        libDefaults: STRINGIFY_PLUS_DEFAULTS,
+        pluginDefaults: CONSOLE_PLUS_DEFAULTS,
+        pluginRegistration: pluginRegistrationOptions,
+        shortcode: shortcodeOptions
+      });
+      const mergedViewerOptions = mergeAllOptions({
+        libDefaults: JSON_VIEWER_DEFAULTS,
+        pluginDefaults: CONSOLE_PLUS_DEFAULTS,
+        pluginRegistration: pluginRegistrationOptions,
+        shortcode: shortcodeOptions
+      });
+      
+      // Log to terminal if enabled
+      if (mergedTerminalOptions.logToTerminal) {
+        logToTerminal(value, mergedTerminalOptions.title, mergedTerminalOptions);
+      }
+      
+      // Process value with stringifyPlus
+      const processedValue = await stringifyPlus(value, mergedStringifyOptions);
+      
+      // Generate browser console output
+      let output = '';
+      if (mergedTerminalOptions.logToBrowserConsole) {
+        const title = mergedTerminalOptions.title ? `"${mergedTerminalOptions.title}", ` : '';
+        output += `<script>console.log(${title}${processedValue});</script>`;
+      }
+      
+      // Generate HTML viewer output if enabled
+      if (mergedTerminalOptions.logToHtml) {
+        const viewerHTML = await jsonViewer(processedValue, mergedViewerOptions);
+        output = viewerHTML + output;
+      }
+      
+      return output;
+    } catch (error) {
+      console.error('Error in console shortcode:', error);
+      return `<div style="color: red; padding: 10px; border: 1px solid red; margin: 10px 0;">
+        <strong>Console Plus Error:</strong> ${error.message}
+      </div>`;
+    }
+  });
+
+  // Original console shortcode
   eleventyConfig.addAsyncShortcode("console", async function(...args) {
-    const { value, options: shortcodeOptions } = parseConsoleArgs(args);
-    // Merge all options for each lib
-    const mergedTerminalOptions = mergeAllOptions({
-      libDefaults: LOG_TO_TERMINAL_DEFAULTS,
-      pluginDefaults: CONSOLE_PLUS_DEFAULTS,
-      pluginRegistration: pluginRegistrationOptions,
-      shortcode: shortcodeOptions
-    });
-    const mergedStringifyOptions = mergeAllOptions({
-      libDefaults: STRINGIFY_PLUS_DEFAULTS,
-      pluginDefaults: CONSOLE_PLUS_DEFAULTS,
-      pluginRegistration: pluginRegistrationOptions,
-      shortcode: shortcodeOptions
-    });
-    const mergedViewerOptions = mergeAllOptions({
-      libDefaults: JSON_VIEWER_DEFAULTS,
-      pluginDefaults: CONSOLE_PLUS_DEFAULTS,
-      pluginRegistration: pluginRegistrationOptions,
-      shortcode: shortcodeOptions
-    });
-    // Log to terminal if enabled
-    if (mergedTerminalOptions.logToTerminal) {
-      logToTerminal(value, mergedTerminalOptions.title, mergedTerminalOptions);
+    try {
+      // Input validation
+      if (!args || args.length === 0) {
+        console.warn('Console shortcode called without arguments');
+        return '<div style="color: red;">Console shortcode called without arguments</div>';
+      }
+
+      const { value, options: shortcodeOptions } = parseConsoleArgs(args);
+      
+      // Validate parsed options
+      if (shortcodeOptions && typeof shortcodeOptions !== 'object') {
+        console.warn('Invalid options passed to console shortcode');
+        return '<div style="color: red;">Invalid options passed to console shortcode</div>';
+      }
+
+      // Merge all options for each lib
+      const mergedTerminalOptions = mergeAllOptions({
+        libDefaults: LOG_TO_TERMINAL_DEFAULTS,
+        pluginDefaults: CONSOLE_PLUS_DEFAULTS,
+        pluginRegistration: pluginRegistrationOptions,
+        shortcode: shortcodeOptions
+      });
+      const mergedStringifyOptions = mergeAllOptions({
+        libDefaults: STRINGIFY_PLUS_DEFAULTS,
+        pluginDefaults: CONSOLE_PLUS_DEFAULTS,
+        pluginRegistration: pluginRegistrationOptions,
+        shortcode: shortcodeOptions
+      });
+      const mergedViewerOptions = mergeAllOptions({
+        libDefaults: JSON_VIEWER_DEFAULTS,
+        pluginDefaults: CONSOLE_PLUS_DEFAULTS,
+        pluginRegistration: pluginRegistrationOptions,
+        shortcode: shortcodeOptions
+      });
+      
+      // Log to terminal if enabled
+      if (mergedTerminalOptions.logToTerminal) {
+        logToTerminal(value, mergedTerminalOptions.title, mergedTerminalOptions);
+      }
+      
+      // Process value with stringifyPlus
+      const processedValue = await stringifyPlus(value, mergedStringifyOptions);
+      
+      // Generate browser console output
+      let output = '';
+      if (mergedTerminalOptions.logToBrowserConsole) {
+        const title = mergedTerminalOptions.title ? `"${mergedTerminalOptions.title}", ` : '';
+        output += `<script>console.log(${title}${processedValue});</script>`;
+      }
+      
+      // Generate HTML viewer output if enabled
+      if (mergedTerminalOptions.logToHtml) {
+        const viewerHTML = await jsonViewer(processedValue, mergedViewerOptions);
+        output = viewerHTML + output;
+      }
+      
+      return output;
+    } catch (error) {
+      console.error('Error in console shortcode:', error);
+      return `<div style="color: red; padding: 10px; border: 1px solid red; margin: 10px 0;">
+        <strong>Console Plus Error:</strong> ${error.message}
+      </div>`;
     }
-    // Process value with stringifyPlus
-    const processedValue = await stringifyPlus(value, mergedStringifyOptions);
-    // Generate browser console output
-    let output = '';
-    if (mergedTerminalOptions.logToBrowserConsole) {
-      const title = mergedTerminalOptions.title ? `"${mergedTerminalOptions.title}", ` : '';
-      output += `<script>console.log(${title}${processedValue});</script>`;
-    }
-    // Generate HTML viewer output if enabled
-    if (mergedTerminalOptions.logToHtml) {
-      const viewerHTML = await jsonViewer(processedValue, mergedViewerOptions);
-      output = viewerHTML + output;
-    }
-    return output;
   });
 }
 

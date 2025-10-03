@@ -8,6 +8,9 @@ export default (eleventyConfig) => {
     logToHtml: true, // log to HTML
   } );
 
+  eleventyConfig.addCollection("test", (collectionApi) => {
+    return collectionApi.getFilteredByGlob("test/src/**/*.md");
+  });
 };
 
 export const config = {
