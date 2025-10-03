@@ -36,7 +36,7 @@ export const CONSOLE_PLUS_DEFAULTS = {
 
 import { logToTerminal, LOG_TO_TERMINAL_DEFAULTS } from "./lib/logToTerminal.js";
 import { stringifyPlus, STRINGIFY_PLUS_DEFAULTS } from "./lib/stringify-plus.js";
-import { jsonViewer, JSON_VIEWER_DEFAULTS } from "./lib/json-viewer.js";
+import { consolePlus as consolePlusViewer, CONSOLE_PLUS_DEFAULTS as CONSOLE_PLUS_VIEWER_DEFAULTS } from "./lib/console-plus.js";
 
 function mergeAllOptions({
   libDefaults = {},
@@ -74,45 +74,75 @@ function parseConsoleArgs(args) {
 }
 
 function consolePlus(eleventyConfig, pluginRegistrationOptions = {}) {
+  // Validate plugin registration options
+  if (pluginRegistrationOptions && typeof pluginRegistrationOptions !== 'object') {
+    throw new Error('Plugin registration options must be an object');
+  }
+
   eleventyConfig.addAsyncShortcode("console", async function(...args) {
-    const { value, options: shortcodeOptions } = parseConsoleArgs(args);
-    // Merge all options for each lib
-    const mergedTerminalOptions = mergeAllOptions({
-      libDefaults: LOG_TO_TERMINAL_DEFAULTS,
-      pluginDefaults: CONSOLE_PLUS_DEFAULTS,
-      pluginRegistration: pluginRegistrationOptions,
-      shortcode: shortcodeOptions
-    });
-    const mergedStringifyOptions = mergeAllOptions({
-      libDefaults: STRINGIFY_PLUS_DEFAULTS,
-      pluginDefaults: CONSOLE_PLUS_DEFAULTS,
-      pluginRegistration: pluginRegistrationOptions,
-      shortcode: shortcodeOptions
-    });
-    const mergedViewerOptions = mergeAllOptions({
-      libDefaults: JSON_VIEWER_DEFAULTS,
-      pluginDefaults: CONSOLE_PLUS_DEFAULTS,
-      pluginRegistration: pluginRegistrationOptions,
-      shortcode: shortcodeOptions
-    });
-    // Log to terminal if enabled
-    if (mergedTerminalOptions.logToTerminal) {
-      logToTerminal(value, mergedTerminalOptions.title, mergedTerminalOptions);
+    try {
+      // Input validation
+      if (!args || args.length === 0) {
+        console.warn('Console shortcode called without arguments');
+        return '<div style="color: red;">Console shortcode called without arguments</div>';
+      }
+
+      const { value, options: shortcodeOptions } = parseConsoleArgs(args);
+      
+      // Validate parsed options
+      if (shortcodeOptions && typeof shortcodeOptions !== 'object') {
+        console.warn('Invalid options passed to console shortcode');
+        return '<div style="color: red;">Invalid options passed to console shortcode</div>';
+      }
+
+      // Merge all options for each lib
+      const mergedTerminalOptions = mergeAllOptions({
+        libDefaults: LOG_TO_TERMINAL_DEFAULTS,
+        pluginDefaults: CONSOLE_PLUS_DEFAULTS,
+        pluginRegistration: pluginRegistrationOptions,
+        shortcode: shortcodeOptions
+      });
+      const mergedStringifyOptions = mergeAllOptions({
+        libDefaults: STRINGIFY_PLUS_DEFAULTS,
+        pluginDefaults: CONSOLE_PLUS_DEFAULTS,
+        pluginRegistration: pluginRegistrationOptions,
+        shortcode: shortcodeOptions
+      });
+      const mergedViewerOptions = mergeAllOptions({
+        libDefaults: CONSOLE_PLUS_VIEWER_DEFAULTS,
+        pluginDefaults: CONSOLE_PLUS_DEFAULTS,
+        pluginRegistration: pluginRegistrationOptions,
+        shortcode: shortcodeOptions
+      });
+      
+      // Log to terminal if enabled
+      if (mergedTerminalOptions.logToTerminal) {
+        logToTerminal(value, mergedTerminalOptions.title, mergedTerminalOptions);
+      }
+      
+      // Process value with stringifyPlus
+      const processedValue = await stringifyPlus(value, mergedStringifyOptions);
+      
+      // Generate browser console output
+      let output = '';
+      if (mergedTerminalOptions.logToBrowserConsole) {
+        const title = mergedTerminalOptions.title ? `"${mergedTerminalOptions.title}", ` : '';
+        output += `<script>console.log(${title}${processedValue});</script>`;
+      }
+      
+      // Generate HTML viewer output if enabled
+      if (mergedTerminalOptions.logToHtml) {
+        const viewerHTML = await consolePlusViewer(processedValue, mergedViewerOptions);
+        output = viewerHTML + output;
+      }
+      
+      return output;
+    } catch (error) {
+      console.error('Error in console shortcode:', error);
+      return `<div style="color: red; padding: 10px; border: 1px solid red; margin: 10px 0;">
+        <strong>Console Plus Error:</strong> ${error.message}
+      </div>`;
     }
-    // Process value with stringifyPlus
-    const processedValue = await stringifyPlus(value, mergedStringifyOptions);
-    // Generate browser console output
-    let output = '';
-    if (mergedTerminalOptions.logToBrowserConsole) {
-      const title = mergedTerminalOptions.title ? `"${mergedTerminalOptions.title}", ` : '';
-      output += `<script>console.log(${title}${processedValue});</script>`;
-    }
-    // Generate HTML viewer output if enabled
-    if (mergedTerminalOptions.logToHtml) {
-      const viewerHTML = await jsonViewer(processedValue, mergedViewerOptions);
-      output = viewerHTML + output;
-    }
-    return output;
   });
 }
 

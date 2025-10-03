@@ -48,10 +48,6 @@ const permalink = "/"
     </style>
 </head>
 <body>
-  
-
-       {% console obj %}
-
     <!-- 0. Comparison with dump and undefined -->
     <h2>Comparison with <code>dump</code> (with <code>undefined</code>)</h2>
     <p>This example shows how <code>dump</code> and <code>console</code> handle <code>undefined</code> values in objects.</p>
@@ -255,6 +251,14 @@ const permalink = "/"
     {% console object, "Title", { showTypes: true } %}
     {% console object, { showTypes: true } %}
     {% console object, { title: "Title", showTypes: true } %}
+    <hr />
+
+    <!-- 14. Collections Example -->
+    <h2>Collections Example</h2>
+    <p>Debug Eleventy collections data to see all your content organized by collection.</p>
+    <pre><code>{% raw %}{% console collections %}{% endraw %}</code></pre>
+    <h3>Output:</h3>
+    {% console collections %}
     <hr />
 
     <h2>Guidelines</h2>
