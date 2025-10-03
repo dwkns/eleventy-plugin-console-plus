@@ -11,6 +11,12 @@ export default (eleventyConfig) => {
   eleventyConfig.addCollection("test", (collectionApi) => {
     return collectionApi.getFilteredByGlob("test/src/**/*.md");
   });
+  eleventyConfig.addCollection("test1", (collectionApi) => {
+    return collectionApi.getFilteredByGlob("test/src/**/*.md");
+  });
+  eleventyConfig.addCollection("test2", (collectionApi) => {
+    return collectionApi.getFilteredByGlob("test/src/**/*.md");
+  });
 };
 
 export const config = {

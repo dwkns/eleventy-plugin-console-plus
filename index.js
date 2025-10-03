@@ -36,7 +36,7 @@ export const CONSOLE_PLUS_DEFAULTS = {
 
 import { logToTerminal, LOG_TO_TERMINAL_DEFAULTS } from "./lib/logToTerminal.js";
 import { stringifyPlus, STRINGIFY_PLUS_DEFAULTS } from "./lib/stringify-plus.js";
-import { jsonViewer, JSON_VIEWER_DEFAULTS } from "./lib/json-viewer.js";
+import { consolePlus as consolePlusViewer, CONSOLE_PLUS_DEFAULTS as CONSOLE_PLUS_VIEWER_DEFAULTS } from "./lib/console-plus.js";
 
 function mergeAllOptions({
   libDefaults = {},
@@ -109,7 +109,7 @@ function consolePlus(eleventyConfig, pluginRegistrationOptions = {}) {
         shortcode: shortcodeOptions
       });
       const mergedViewerOptions = mergeAllOptions({
-        libDefaults: JSON_VIEWER_DEFAULTS,
+        libDefaults: CONSOLE_PLUS_VIEWER_DEFAULTS,
         pluginDefaults: CONSOLE_PLUS_DEFAULTS,
         pluginRegistration: pluginRegistrationOptions,
         shortcode: shortcodeOptions
@@ -132,7 +132,7 @@ function consolePlus(eleventyConfig, pluginRegistrationOptions = {}) {
       
       // Generate HTML viewer output if enabled
       if (mergedTerminalOptions.logToHtml) {
-        const viewerHTML = await jsonViewer(processedValue, mergedViewerOptions);
+        const viewerHTML = await consolePlusViewer(processedValue, mergedViewerOptions);
         output = viewerHTML + output;
       }
       

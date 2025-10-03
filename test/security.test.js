@@ -9,14 +9,14 @@
  */
 import { describe, it, expect } from 'vitest';
 import { stringifyPlus } from '../lib/stringify-plus.js';
-import { jsonViewer } from '../lib/json-viewer.js';
+import { consolePlus } from '../lib/console-plus.js';
 
 describe('Security Tests', () => {
   describe('XSS Prevention', () => {
     it('sanitizes script tags in data-json attributes', async () => {
       const maliciousData = { script: '<script>alert("xss")</script>' };
       const processedJson = await stringifyPlus(maliciousData);
-      const html = await jsonViewer(processedJson);
+      const html = await consolePlus(processedJson);
       
       // Should not contain unescaped script tags
       expect(html).not.toContain('<script>alert("xss")</script>');
@@ -26,7 +26,7 @@ describe('Security Tests', () => {
     it('sanitizes javascript: URLs', async () => {
       const maliciousData = { url: 'javascript:alert("xss")' };
       const processedJson = await stringifyPlus(maliciousData);
-      const html = await jsonViewer(processedJson);
+      const html = await consolePlus(processedJson);
       
       // Should contain the data but with escaped quotes
       expect(html).toContain('javascript:alert(\\&quot;xss\\&quot;)');
@@ -35,7 +35,7 @@ describe('Security Tests', () => {
 
     it('sanitizes HTML entities in titles', async () => {
       const maliciousTitle = '<script>alert("xss")</script>';
-      const html = await jsonViewer('{"test": "value"}', { title: maliciousTitle });
+      const html = await consolePlus('{"test": "value"}', { title: maliciousTitle });
       
       // Should contain escaped HTML
       expect(html).toContain('&lt;script&gt;');
@@ -69,18 +69,18 @@ describe('Security Tests', () => {
     it('validates JSON viewer data size', async () => {
       // Test with reasonably sized data
       const normalData = { test: 'value' };
-      const html = await jsonViewer(JSON.stringify(normalData));
-      expect(html).toContain('json-viewer');
+      const html = await consolePlus(JSON.stringify(normalData));
+      expect(html).toContain('console-plus');
     });
 
     it('handles empty data gracefully', async () => {
-      const html = await jsonViewer('');
-      expect(html).toContain('json-viewer');
+      const html = await consolePlus('');
+      expect(html).toContain('console-plus');
     });
 
     it('validates data-json attribute type', async () => {
       // This tests the internal validation in the web component
-      const html = await jsonViewer('{"test": "value"}');
+      const html = await consolePlus('{"test": "value"}');
       expect(html).toContain('data-json=');
     });
   });
@@ -88,7 +88,7 @@ describe('Security Tests', () => {
   describe('Malicious Content Detection', () => {
     it('detects script injection attempts', async () => {
       const maliciousJson = '{"test": "<script>alert(1)</script>"}';
-      const html = await jsonViewer(maliciousJson);
+      const html = await consolePlus(maliciousJson);
       
       // Should contain the data but with escaped script tags
       expect(html).toContain('&lt;script&gt;');
@@ -97,10 +97,10 @@ describe('Security Tests', () => {
 
     it('handles malformed JSON gracefully', async () => {
       const malformedJson = '{"test": "value"'; // Missing closing brace
-      const html = await jsonViewer(malformedJson);
+      const html = await consolePlus(malformedJson);
       
       // Should still create the component but handle the error
-      expect(html).toContain('json-viewer');
+      expect(html).toContain('console-plus');
     });
   });
 });

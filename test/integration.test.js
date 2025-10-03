@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { stringifyPlus } from '../lib/stringify-plus.js';
-import { jsonViewer } from '../lib/json-viewer.js';
+import { consolePlus } from '../lib/console-plus.js';
 import { logToTerminal } from '../lib/logToTerminal.js';
 
 describe('Integration Tests', () => {
@@ -48,12 +48,12 @@ describe('Integration Tests', () => {
       });
 
       // Process through JSON viewer
-      const html = await jsonViewer(stringified, {
+      const html = await consolePlus(stringified, {
         showTypes: true,
         defaultExpanded: false
       });
 
-      expect(html).toContain('json-viewer');
+      expect(html).toContain('console-plus');
       expect(html).toContain('collections');
       expect(html).toContain('template'); // Template is replaced with message, not removed
     });
@@ -65,14 +65,14 @@ describe('Integration Tests', () => {
       const data3 = { config: { theme: 'dark', lang: 'en' } };
 
       const results = await Promise.all([
-        jsonViewer(await stringifyPlus(data1), { title: 'User Data' }),
-        jsonViewer(await stringifyPlus(data2), { title: 'Posts' }),
-        jsonViewer(await stringifyPlus(data3), { title: 'Config' })
+        consolePlus(await stringifyPlus(data1), { title: 'User Data' }),
+        consolePlus(await stringifyPlus(data2), { title: 'Posts' }),
+        consolePlus(await stringifyPlus(data3), { title: 'Config' })
       ]);
 
       expect(results).toHaveLength(3);
       results.forEach(result => {
-        expect(result).toContain('json-viewer');
+        expect(result).toContain('console-plus');
       });
     });
 
@@ -186,9 +186,9 @@ describe('Integration Tests', () => {
       };
 
       const result = await stringifyPlus(templateData);
-      const html = await jsonViewer(result, { title: 'Page Data' });
+      const html = await consolePlus(result, { title: 'Page Data' });
 
-      expect(html).toContain('json-viewer');
+      expect(html).toContain('console-plus');
       expect(result).toContain('"title":"Home Page"');
       expect(result).toContain('"url":"/"');
     });
@@ -221,9 +221,9 @@ describe('Integration Tests', () => {
       };
 
       const result = await stringifyPlus(pluginData);
-      const html = await jsonViewer(result, { title: 'Plugin Data' });
+      const html = await consolePlus(result, { title: 'Plugin Data' });
 
-      expect(html).toContain('json-viewer');
+      expect(html).toContain('console-plus');
       expect(result).toContain('"languages":["javascript","css","html"]');
       expect(result).toContain('"readingTime"');
     });
@@ -266,14 +266,14 @@ describe('Integration Tests', () => {
         removeKeys: ['content']
       });
       
-      const html = await jsonViewer(result, {
+      const html = await consolePlus(result, {
         title: blogPost.data.title,
         showTypes: true
       });
       
       const endTime = Date.now();
 
-      expect(html).toContain('json-viewer');
+      expect(html).toContain('console-plus');
       expect(result).toContain('"title":"My Blog Post"');
       expect(endTime - startTime).toBeLessThan(500); // Should be fast
     });
@@ -297,9 +297,9 @@ describe('Integration Tests', () => {
       };
 
       const result = await stringifyPlus(navigation);
-      const html = await jsonViewer(result, { title: 'Navigation' });
+      const html = await consolePlus(result, { title: 'Navigation' });
 
-      expect(html).toContain('json-viewer');
+      expect(html).toContain('console-plus');
       expect(result).toContain('"main"');
       expect(result).toContain('"active":true');
     });
@@ -325,9 +325,9 @@ describe('Integration Tests', () => {
       const result = await stringifyPlus(formData, {
         removeKeys: ['ip', 'userAgent'] // Remove sensitive data
       });
-      const html = await jsonViewer(result, { title: 'Form Data' });
+      const html = await consolePlus(result, { title: 'Form Data' });
 
-      expect(html).toContain('json-viewer');
+      expect(html).toContain('console-plus');
       expect(result).toContain('"name":"John Doe"');
       expect(result).toContain('"ip"'); // IP is replaced with message, not removed
     });
@@ -362,14 +362,14 @@ describe('Integration Tests', () => {
 
       const promises = datasets.map(async (dataset) => {
         const stringified = await stringifyPlus(dataset);
-        return jsonViewer(stringified, { title: `Dataset ${dataset.id}` });
+        return consolePlus(stringified, { title: `Dataset ${dataset.id}` });
       });
 
       const results = await Promise.all(promises);
       
       expect(results).toHaveLength(3);
       results.forEach((result, index) => {
-        expect(result).toContain('json-viewer');
+        expect(result).toContain('console-plus');
         expect(result).toContain(`Dataset ${index + 1}`);
       });
     });

@@ -9,8 +9,8 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { jsonViewer } from '../lib/json-viewer.js';
-import { JsonViewerComponent } from '../lib/json-viewer.js';
+import { consolePlus } from '../lib/console-plus.js';
+import { ConsolePlusComponent } from '../lib/console-plus.js';
 
 describe('Browser Compatibility Tests', () => {
   let dom;
@@ -34,8 +34,8 @@ describe('Browser Compatibility Tests', () => {
   describe('Shadow DOM Support', () => {
     it('works with Shadow DOM support', async () => {
       // Test with full Shadow DOM support
-      const html = await jsonViewer('{"test": "value"}');
-      expect(html).toContain('json-viewer');
+      const html = await consolePlus('{"test": "value"}');
+      expect(html).toContain('console-plus');
       expect(html).toContain('data-json=');
     });
 
@@ -47,7 +47,7 @@ describe('Browser Compatibility Tests', () => {
       };
 
       try {
-        const component = new JsonViewerComponent();
+        const component = new ConsolePlusComponent();
         expect(component._fallbackMode).toBe(true);
       } finally {
         // Restore original method
@@ -63,7 +63,7 @@ describe('Browser Compatibility Tests', () => {
       };
 
       try {
-        const component = new JsonViewerComponent();
+        const component = new ConsolePlusComponent();
         expect(component._fallbackMode).toBe(true);
       } finally {
         HTMLElement.prototype.attachShadow = originalAttachShadow;
@@ -76,8 +76,8 @@ describe('Browser Compatibility Tests', () => {
       if (window.customElements) {
         // Should not throw when registering
         expect(() => {
-          if (!window.customElements.get('json-viewer')) {
-            window.customElements.define('json-viewer', JsonViewerComponent);
+          if (!window.customElements.get('console-plus')) {
+            window.customElements.define('console-plus', ConsolePlusComponent);
           }
         }).not.toThrow();
       }
@@ -92,7 +92,7 @@ describe('Browser Compatibility Tests', () => {
         // Should not throw when customElements is not available
         expect(() => {
           // The component should still work
-          const component = new JsonViewerComponent();
+          const component = new ConsolePlusComponent();
           expect(component).toBeDefined();
         }).not.toThrow();
       } finally {
@@ -112,7 +112,7 @@ describe('Browser Compatibility Tests', () => {
         try {
           // Should handle the error gracefully
           expect(() => {
-            const component = new JsonViewerComponent();
+            const component = new ConsolePlusComponent();
             expect(component).toBeDefined();
           }).not.toThrow();
         } finally {
@@ -130,7 +130,7 @@ describe('Browser Compatibility Tests', () => {
       delete navigator.clipboard;
 
       try {
-        const component = new JsonViewerComponent();
+        const component = new ConsolePlusComponent();
         component.setupComponentEventListeners();
         
         // Should not throw
@@ -149,7 +149,7 @@ describe('Browser Compatibility Tests', () => {
       };
 
       try {
-        const component = new JsonViewerComponent();
+        const component = new ConsolePlusComponent();
         component.render();
         
         // Should handle gracefully
@@ -172,7 +172,7 @@ describe('Browser Compatibility Tests', () => {
       };
 
       try {
-        const component = new JsonViewerComponent();
+        const component = new ConsolePlusComponent();
         component.render();
         
         // Should handle gracefully
@@ -187,13 +187,13 @@ describe('Browser Compatibility Tests', () => {
   describe('Fallback Mode Behavior', () => {
     it('renders correctly in fallback mode', async () => {
       // Create component in fallback mode
-      const component = new JsonViewerComponent();
+      const component = new ConsolePlusComponent();
       component._fallbackMode = true;
       component.setAttribute('data-json', '{"test": "value"}');
       
       // Mock querySelector to work in fallback mode
       component.querySelector = function(selector) {
-        if (selector === '.json-viewer-content') {
+        if (selector === '.console-plus-content') {
           return document.createElement('div');
         }
         return null;
@@ -206,7 +206,7 @@ describe('Browser Compatibility Tests', () => {
     });
 
     it('handles event listeners in fallback mode', () => {
-      const component = new JsonViewerComponent();
+      const component = new ConsolePlusComponent();
       component._fallbackMode = true;
       
       // Mock getElementById to work in fallback mode
@@ -223,7 +223,7 @@ describe('Browser Compatibility Tests', () => {
 
   describe('Cross-Browser Compatibility', () => {
     it('handles different event models', () => {
-      const component = new JsonViewerComponent();
+      const component = new ConsolePlusComponent();
       
       // Mock different event handling approaches
       const mockElement = {
@@ -246,7 +246,7 @@ describe('Browser Compatibility Tests', () => {
     });
 
     it('handles different CSS support', () => {
-      const component = new JsonViewerComponent();
+      const component = new ConsolePlusComponent();
       
       // Mock CSS that might not be supported in older browsers
       const mockStyle = {
@@ -279,8 +279,8 @@ describe('Browser Compatibility Tests', () => {
       };
 
       try {
-        const html = await jsonViewer('{"test": "value"}');
-        expect(html).toContain('json-viewer');
+        const html = await consolePlus('{"test": "value"}');
+        expect(html).toContain('console-plus');
       } finally {
         // Restore original
         Node.prototype.appendChild = originalAppendChild;
@@ -291,7 +291,7 @@ describe('Browser Compatibility Tests', () => {
       // Test with multiple instances
       const promises = [];
       for (let i = 0; i < 10; i++) {
-        promises.push(jsonViewer(`{"test": "value${i}"}`));
+        promises.push(consolePlus(`{"test": "value${i}"}`));
       }
       
       const results = await Promise.all(promises);
@@ -299,7 +299,7 @@ describe('Browser Compatibility Tests', () => {
       
       // Should not cause memory issues
       results.forEach(result => {
-        expect(result).toContain('json-viewer');
+        expect(result).toContain('console-plus');
       });
     });
   });

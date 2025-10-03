@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { stringifyPlus } from '../lib/stringify-plus.js';
-import { jsonViewer } from '../lib/json-viewer.js';
+import { consolePlus } from '../lib/console-plus.js';
 import { logToTerminal } from '../lib/logToTerminal.js';
 
 describe('Error Handling Tests', () => {
@@ -78,31 +78,31 @@ describe('Error Handling Tests', () => {
   describe('JSON Viewer Error Handling', () => {
     it('handles malformed JSON gracefully', async () => {
       const malformedJson = '{"test": "value"'; // Missing closing brace
-      const html = await jsonViewer(malformedJson);
+      const html = await consolePlus(malformedJson);
       
       // Should still create the component
-      expect(html).toContain('json-viewer');
+      expect(html).toContain('console-plus');
     });
 
     it('handles empty data gracefully', async () => {
-      const html = await jsonViewer('');
-      expect(html).toContain('json-viewer');
+      const html = await consolePlus('');
+      expect(html).toContain('console-plus');
     });
 
     it('handles null and undefined data', async () => {
-      const html1 = await jsonViewer(null);
-      const html2 = await jsonViewer(undefined);
+      const html1 = await consolePlus(null);
+      const html2 = await consolePlus(undefined);
       
-      expect(html1).toContain('json-viewer');
-      expect(html2).toContain('json-viewer');
+      expect(html1).toContain('console-plus');
+      expect(html2).toContain('console-plus');
     });
 
     it('handles extremely large data', async () => {
       // Create data that might cause issues
       const largeData = { data: 'x'.repeat(100000) }; // 100KB string
-      const html = await jsonViewer(JSON.stringify(largeData));
+      const html = await consolePlus(JSON.stringify(largeData));
       
-      expect(html).toContain('json-viewer');
+      expect(html).toContain('console-plus');
     });
   });
 
@@ -125,11 +125,15 @@ describe('Error Handling Tests', () => {
       }).not.toThrow();
     });
 
-    it('handles invalid plugin registration options', () => {
-      const { consolePlus } = require('../index.cjs');
+    it('handles invalid plugin registration options', async () => {
+      const { consolePlus } = await import('../index.js');
+      
+      const mockConfig = {
+        addAsyncShortcode: () => {}
+      };
       
       expect(() => {
-        consolePlus(null, 'invalid');
+        consolePlus(mockConfig, 'invalid');
       }).toThrow('Plugin registration options must be an object');
     });
   });

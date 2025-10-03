@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { stringifyPlus } from '../lib/stringify-plus.js';
-import { jsonViewer } from '../lib/json-viewer.js';
+import { consolePlus } from '../lib/console-plus.js';
 
 describe('Performance Tests', () => {
   describe('Large Object Handling', () => {
@@ -145,10 +145,10 @@ describe('Performance Tests', () => {
       }
 
       const startTime = Date.now();
-      const html = await jsonViewer(JSON.stringify(largeData));
+      const html = await consolePlus(JSON.stringify(largeData));
       const endTime = Date.now();
       
-      expect(html).toContain('json-viewer');
+      expect(html).toContain('console-plus');
       expect(endTime - startTime).toBeLessThan(200); // Should render within 200ms
     });
 
@@ -158,8 +158,8 @@ describe('Performance Tests', () => {
       const startTime = Date.now();
       
       for (let i = 0; i < 20; i++) {
-        const html = await jsonViewer(JSON.stringify(testData));
-        expect(html).toContain('json-viewer');
+        const html = await consolePlus(JSON.stringify(testData));
+        expect(html).toContain('console-plus');
       }
       
       const endTime = Date.now();

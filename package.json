@@ -2,18 +2,16 @@
   "name": "eleventy-plugin-console-plus",
   "version": "1.0.0-alpha.9",
   "description": "An enhanced console.log for Eleventy with HTML output, terminal logging, and browser console support",
-  "main": "index.cjs",
+  "main": "index.js",
   "type": "module",
   "exports": {
-    "import": "./index.js",
-    "require": "./index.cjs"
+    "import": "./index.js"
   },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "dev": "npx @11ty/eleventy --serve",
-    "build": "npx rollup -c",
     "pub": "npm publish"
   },
   "keywords": [

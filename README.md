@@ -4,17 +4,23 @@
 
 **Console Plus** is a Eleventy (11ty) plugin that adds a shortcode for debugging your templates, objects, and data. It logs to your HTML output, your terminal, and your browser console—all at once, with beautiful formatting and deep customization.
 
+The HTML output uses a custom **Web Component** (`<console-plus>`) that provides an interactive, collapsible JSON viewer with advanced features like type labels, hover paths, and expandable nodes.
+
 If you've ever tried to debug collections or any other complex object in Eleventy this is for you. 
 
 ---
 
 ## ✨ Features
 
-- Pretty-prints any value (object, array, string, etc.) in your template, terminal, and browser console
-- Collapsible, interactive HTML viewer with type labels, key paths, and more
-- Handles circular references, functions, symbols, BigInts, Dates, and undefined
-- Hide or replace keys to reduce output complexity.
-- Works with Eleventy v3+ (ESM & CJS)
+- **Interactive Web Component**: Uses `<json-viewer>` custom element for rich HTML output
+- **Multi-destination logging**: Outputs to HTML, terminal, and browser console simultaneously
+- **Advanced JSON viewer**: Collapsible nodes, type labels, key paths on hover, and expand controls
+- **Robust data handling**: Handles circular references, functions, symbols, BigInts, Dates, and undefined
+- **Security features**: XSS prevention, input validation, and malicious content detection
+- **Performance optimized**: Memoization, debouncing, and memory management
+- **Browser compatibility**: Fallback modes for environments without Shadow DOM support
+- **Flexible configuration**: Hide or replace keys, control output destinations, and customize viewer appearance
+- **Works with Eleventy v3+**: Full ESM & CJS support
 
 ---
 
@@ -30,7 +36,7 @@ npm install eleventy-plugin-console-plus
 
 In your `eleventy.config.js` :
 
-#### ES6
+#### ES Modules Configuration
 
 ```js
 import { consolePlus } from 'eleventy-plugin-console-plus';
@@ -40,12 +46,13 @@ export default function(eleventyConfig) {
 }
 ```
 
-#### CJS
+#### CommonJS Configuration
+
+Since this plugin is an ES module, you'll need to use dynamic `import()` in CommonJS configuration files:
 
 ```js
-const { consolePlus } = require("eleventy-plugin-console-plus");
-
 module.exports = async function(eleventyConfig) {
+  const { consolePlus } = await import('eleventy-plugin-console-plus');
   eleventyConfig.addPlugin(consolePlus);
 };
 ```
@@ -58,9 +65,19 @@ In your template:
   {% console  { string: "Hello, World!", number: 123 } %}
 ```
 
-Outputs to your HTML as:
+Outputs to your HTML as an interactive web component:
 
 ![HTML Output](1.png)
+
+### Collections Example
+
+Debug your Eleventy collections data:
+
+```njk
+  {% console collections %}
+```
+
+This will display all your content organized by collection in the interactive JSON viewer.
 
 ---
 
@@ -99,9 +116,13 @@ Assume we have the following variable:
 
 ![HTML Output](2.png)
 
-Show tpyes
+### 4. **Show Types and Default Expanded**
 
-default expanded 
+```njk
+{% console obj, { showTypes: true, defaultExpanded: true } %}
+```
+
+This will display type labels and expand all nodes by default in the web component viewer.
 
 ### 2. **Showing Template Keys**
 
@@ -122,6 +143,25 @@ Similarly sometimes your data contains a large nested structure that you're not 
 
 ![HTML Output](4.png)
 
+## 🔧 Web Component Features
+
+The `<console-plus>` web component provides several interactive features:
+
+- **Collapsible nodes**: Click the arrow (▶/▼) to expand/collapse objects and arrays
+- **Type labels**: Enable `showTypes: true` to see data type indicators
+- **Hover paths**: Enable `pathsOnHover: true` to see key paths when hovering
+- **Default expansion**: Use `defaultExpanded: true` to show all content expanded
+- **Visual controls**: Enable `showControls: true` for additional UI controls
+- **Custom styling**: Adjust `indentWidth` for spacing preferences
+
+### Browser Compatibility
+
+The web component includes fallback support for environments without Shadow DOM:
+
+- **Modern browsers**: Uses Shadow DOM for encapsulation
+- **Legacy browsers**: Falls back to direct DOM manipulation
+- **No JavaScript**: Displays as plain text if JavaScript is disabled
+
 ## ⚙️ Configuration
 
 You can pass a configuration object when you add the plugin. 
@@ -129,7 +169,7 @@ You can pass a configuration object when you add the plugin.
 In your `eleventy.config.js`:
 
 ```js
-import consolePlus from 'eleventy-plugin-console-plus';
+import { consolePlus } from 'eleventy-plugin-console-plus';
 
 export default function(eleventyConfig) {
   eleventyConfig.addPlugin(consolePlus, { 
@@ -188,8 +228,23 @@ Terminal output
 ![HTML Output](9.png)
 
 ## Notable Updates
-1.0.0  (latest) — Rewritten from scratch, improved HTML output, better plugin naming
-0.1.1 Added logging to browser console & option to wrap line length.
+
+**1.0.0-alpha.9** (latest) — Simplified build process:
+- **ES Module Only**: Removed CommonJS build, simplified package structure
+- **Dynamic Import Support**: Clear documentation for CommonJS config usage
+- **Reduced Package Size**: Eliminated Rollup build step and generated files
+
+**1.0.0-alpha.8** — Major rewrite with:
+- **Web Component Architecture**: Interactive `<console-plus>` custom element
+- **Enhanced Security**: XSS prevention, input validation, malicious content detection
+- **Performance Optimizations**: Memoization, debouncing, memory management
+- **Browser Compatibility**: Fallback modes for Shadow DOM support
+- **Comprehensive Testing**: 115+ tests covering security, performance, and error handling
+- **Improved Error Handling**: Graceful degradation and detailed error messages
+
+**0.1.1** — Added logging to browser console & option to wrap line length.
+
+**1.0.0** — Rewritten from scratch, improved HTML output, better plugin naming
 
 ## 📄 License
 
