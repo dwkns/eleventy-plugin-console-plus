@@ -173,8 +173,8 @@ import { consolePlus } from 'eleventy-plugin-console-plus';
 
 export default function(eleventyConfig) {
   eleventyConfig.addPlugin(consolePlus, { 
-  	logToHtml: true,  				 // output to HTML
-  	logToTerminal: false, 		 // output to terminal
+  	logToHtml: true,           // output to HTML
+  	logToTerminal: false,      // output to terminal
   	logToBrowserConsole: false,// output to browser console
   	showTemplate: true         // always show template key
   } );
@@ -183,7 +183,7 @@ export default function(eleventyConfig) {
 These options will apply to all instances of the shortcode. Unless you overide them on a case by case basis.
 
 ```html
-	{% console obj, "My Object", { showTemplate: false, logToTerminal: true,  } %}
+{% console obj, "My Object", { showTemplate: false, logToTerminal: true,  } %}
 ```
 `template` will not be shown and output will be logged to terminal  in this instance of the shortcode. 
 
@@ -229,22 +229,21 @@ Terminal output
 
 ## Notable Updates
 
-**1.0.0-alpha.9** (latest) — Simplified build process:
-- **ES Module Only**: Removed CommonJS build, simplified package structure
+**2.0.0** (latest) — Complete rewrite and major feature release:
+- **Web Component Architecture**: Interactive `<console-plus>` custom element with Shadow DOM
+- **Enhanced Security**: XSS prevention, input validation, and malicious content detection
+- **Performance Optimizations**: Memoization, debouncing, memory management, and virtual rendering
+- **Browser Compatibility**: Fallback modes for environments without Shadow DOM support
+- **Comprehensive Testing**: 115+ tests covering security, performance, error handling, and browser compatibility
+- **Improved Error Handling**: Graceful degradation and detailed error messages
+- **ES Module Only**: Simplified build process, removed CommonJS build
 - **Dynamic Import Support**: Clear documentation for CommonJS config usage
 - **Reduced Package Size**: Eliminated Rollup build step and generated files
-
-**1.0.0-alpha.8** — Major rewrite with:
-- **Web Component Architecture**: Interactive `<console-plus>` custom element
-- **Enhanced Security**: XSS prevention, input validation, malicious content detection
-- **Performance Optimizations**: Memoization, debouncing, memory management
-- **Browser Compatibility**: Fallback modes for Shadow DOM support
-- **Comprehensive Testing**: 115+ tests covering security, performance, and error handling
-- **Improved Error Handling**: Graceful degradation and detailed error messages
-
-**0.1.1** — Added logging to browser console & option to wrap line length.
+- **Collections Example**: Added `{% console collections %}` for debugging Eleventy collections
 
 **1.0.0** — Rewritten from scratch, improved HTML output, better plugin naming
+
+**0.1.1** — Added logging to browser console & option to wrap line length
 
 ## 📄 License
 
